@@ -1,7 +1,12 @@
+//freestanding
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
+//libk
+#include <string.h>
+
+//kernel
 #include <kernel/tty.h>
 
 /* Hardware text mode color constants. */
@@ -32,14 +37,6 @@ static inline uint16_t vga_entry(unsigned char uc, uint8_t color) {
 	return (uint16_t) uc | (uint16_t) color << 8;
 }
 
-//FIXME move to libc/libk
-size_t strlen(const char* str) {
-	size_t len = 0;
-	while (str[len])
-		len++;
-	return len;
-}
- 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
  
