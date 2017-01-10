@@ -16,6 +16,10 @@
 .long FLAGS
 .long CHECKSUM
 
+.section .rodata
+msg_return_from_kernel_main:
+	.ascii "returned from kernel_main"
+
 # The multiboot standard does not define the value of the stack pointer register
 # (esp) and it is up to the kernel to provide a stack. This allocates room for a
 # small stack by creating a symbol at the bottom of it, then allocating 16384
@@ -72,20 +76,9 @@ _start:
 	# preserved and the call is well defined.
 	call kernel_main
 
-	# If the system has nothing more to do, put the computer into an
-	# infinite loop. To do that:
-	# 1) Disable interrupts with cli (clear interrupt enable in eflags).
-	#    They are already disabled by the bootloader, so this is not needed.
-	#    Mind that you might later enable interrupts and return from
-	#    kernel_main (which is sort of nonsensical to do).
-	# 2) Wait for the next interrupt to arrive with hlt (halt instruction).
-	#    Since they are disabled, this will lock up the computer.
-	# 3) Jump to the hlt instruction if it ever wakes up due to a
-	#    non-maskable interrupt occurring or due to system management mode.
-	call kernel_dead
-	cli
-1:	hlt
-	jmp 1b
+	# The kernel shouldn't get there
+	push $msg_return_from_kernel_main
+	call panic
 
 # Set the size of the _start symbol to the current location '.' minus its start.
 # This is useful when debugging or when you implement call tracing.

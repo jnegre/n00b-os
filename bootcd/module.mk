@@ -10,7 +10,7 @@ bootcd/build/n00b-os.iso: bootcd/src/grub.cfg kernel/build/n00b-os.kernel
 .PHONY: demo debug
 
 debug: bootcd/build/n00b-os.iso
-	qemu-system-i386 -cdrom $< -s -S
+	qemu-system-i386 -cdrom $< -s -S -no-reboot -no-shutdown
 
 demo: bootcd/build/n00b-os.iso
-	qemu-system-i386 -cdrom $<
+	qemu-system-i386 -cdrom $< -no-reboot -no-shutdown

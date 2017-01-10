@@ -1,4 +1,5 @@
 #include <kernel/tty.h>
+#include <kernel/panic.h>
 
 /* Check if the compiler thinks we are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -15,9 +16,6 @@ void kernel_main(void) {
 	/* Initialize terminal interface */
 	terminal_initialize();
  
-	terminal_writestring("Hello, kernel World!\nSecond line.\n\nThere was an empty line.");
+	terminal_writestring("Hello, kernel World!\nSecond line.\n\nThere was an empty line.\n");
 }
 
-void kernel_dead(void) {
-	terminal_writestring("\n\nKernel is dead :-(");
-}
