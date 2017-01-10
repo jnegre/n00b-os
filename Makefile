@@ -1,5 +1,5 @@
 #Master makefile
-MODULES:=libk kernel
+MODULES:=libk kernel bootcd
 
 #FIXME should be configured from some external file, with default values
 HOST:=i686-elf
