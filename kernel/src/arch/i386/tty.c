@@ -86,3 +86,21 @@ void terminal_write(const char* data, size_t size) {
 void terminal_writestring(const char* data) {
 	terminal_write(data, strlen(data));
 }
+
+void terminal_writeu32(const uint32_t hex) {
+	static char* CHARS = "0123456789ABCDEF";
+	terminal_putchar('0');
+	terminal_putchar('x');
+	for(int i=7; i>=0; i--) {
+		terminal_putchar(CHARS[hex>>(4*i) & 0xF]);
+	}
+}
+
+void terminal_writeu64(const uint64_t hex) {
+	static char* CHARS = "0123456789ABCDEF";
+	terminal_putchar('0');
+	terminal_putchar('x');
+	for(int i=15; i>=0; i--) {
+		terminal_putchar(CHARS[hex>>(4*i) & 0xF]);
+	}
+}

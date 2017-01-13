@@ -5,6 +5,9 @@
 .set MAGIC,    0x1BADB002       # 'magic number' lets bootloader find the header
 .set CHECKSUM, -(MAGIC + FLAGS) # checksum of above, to prove we are multiboot
 
+# Declare constants for the multiboot information
+.set BOOTLOADER_MAGIC, 0x2BADB002  #This should be in %eax
+
 # Declare a multiboot header that marks the program as a kernel. These are magic
 # values that are documented in the multiboot standard. The bootloader will
 # search for this signature in the first 8 KiB of the kernel file, aligned at a
@@ -17,8 +20,13 @@
 .long CHECKSUM
 
 .section .rodata
+#messages for early boot phase
+msg_early_missing_magic:
+	.asciz "M\360i\360s\360s\360i\360n\360g\360 \360m\360a\360g\360i\360c\360"
+
+#other messages
 msg_return_from_kernel_main:
-	.ascii "returned from kernel_main"
+	.asciz "returned from kernel_main"
 
 # The multiboot standard does not define the value of the stack pointer register
 # (esp) and it is up to the kernel to provide a stack. This allocates room for a
@@ -67,6 +75,29 @@ _start:
 	# yet. The GDT should be loaded here. Paging should be enabled here.
 	# C++ features such as global constructors and exceptions will require
 	# runtime support to work as well.
+	
+	jmp 1f
+early_panic:
+	# display an error message pointed by %esi
+	movl $0xB8000, %edi
+	cld
+2:
+	cmpb $0, (%esi)
+	je 3f
+	movsw
+	jmp 2b
+3:	
+	cli
+	hlt
+	jmp early_panic
+1:
+	# check eax to verify that we've been load by a compatible bootloader
+	movl $msg_early_missing_magic, %esi
+	cmp $BOOTLOADER_MAGIC, %eax
+	jne early_panic
+	
+	push %ebx
+	
 
 	# Enter the high-level kernel. The ABI requires the stack is 16-byte
 	# aligned at the time of the call instruction (which afterwards pushes
