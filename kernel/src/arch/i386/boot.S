@@ -23,6 +23,8 @@
 #messages for early boot phase
 msg_early_missing_magic:
 	.asciz "M\360i\360s\360s\360i\360n\360g\360 \360m\360a\360g\360i\360c\360"
+msg_early_too_big:
+	.asciz "K\360e\360r\360n\360e\360l\360 \360>\360 \3604\360M\360b\360"
 
 #other messages
 msg_return_from_kernel_main:
@@ -38,11 +40,20 @@ msg_return_from_kernel_main:
 # System V ABI standard and de-facto extensions. The compiler will assume the
 # stack is properly aligned and failure to align the stack will result in
 # undefined behavior.
-.section .bss
-.align 16
+.section .bootstrap_stack, "aw", @nobits
+	.align 16
 stack_bottom:
-.skip 16384 # 16 KiB
+	.skip 16384 # 16 KiB
 stack_top:
+
+.section .bss
+	.align 4096 #required for page directory + page table
+boot_pagedir:
+	.skip 4096
+boot_pagetab1:
+	.skip 4096
+	# Further page tables may be required if the kernel grows beyond 3 MiB.
+
 
 # The linker script specifies _start as the entry point to the kernel and the
 # bootloader will jump to this position once the kernel has been loaded. It
@@ -91,13 +102,53 @@ early_panic:
 	hlt
 	jmp early_panic
 1:
-	# check eax to verify that we've been load by a compatible bootloader
+	# Check eax to verify that we've been loaded by a compatible bootloader
 	movl $msg_early_missing_magic, %esi
 	cmp $BOOTLOADER_MAGIC, %eax
 	jne early_panic
 	
-	push %ebx
+	# Check the kernel is small enough to enable paging with a single
+	# Page table of 1024 entries to 4Kb of physical memory
+	movl $msg_early_too_big, %esi
+	movl $kernel_end, %eax
+	#subl $kernel_start, %eax
+	cmp $4*1024*1024, %eax #4mb
+	jge early_panic
 	
+	# Now fill the page table
+	movl $boot_pagetab1, %edi
+	movl $0, %esi #map from the 1st byte of RAM
+	movl $1024, %ecx #map 1024 pages
+	
+4:	
+	# Map physical address as "present, writable". Note that this maps
+	# .text and .rodata as writable.
+	# FIXME Mind security and map them as non-writable.
+	movl %esi, %edx
+	orl $0x003, %edx
+	movl %edx, (%edi)
+	# Size of page is 4096 bytes.
+	addl $4096, %esi
+	# Size of entries in boot_pagetab1 is 4 bytes.
+	addl $4, %edi
+	# Loop to the next entry if we haven't finished.
+	loop 4b
+	
+	# Map the page table to virtual addresses 0x00000000.
+	movl $(boot_pagetab1 + 0x003), boot_pagedir + 0 # +0x003 -> activate RW + Present
+
+	# Set cr3 to the address of the boot_page_directory.
+	movl $(boot_pagedir), %ecx
+	movl %ecx, %cr3
+
+	# Enable paging and the write-protect bit.
+	movl %cr0, %ecx
+	orl $0x80010000, %ecx
+	movl %ecx, %cr0
+	
+	push %ebx #FIXME copy the data in my space or check it's in the 1st 4 Mo
+	push $kernel_end
+	push $kernel_start
 
 	# Enter the high-level kernel. The ABI requires the stack is 16-byte
 	# aligned at the time of the call instruction (which afterwards pushes
@@ -110,7 +161,7 @@ early_panic:
 	# The kernel shouldn't get there
 	push $msg_return_from_kernel_main
 	call panic
-
+	
 # Set the size of the _start symbol to the current location '.' minus its start.
 # This is useful when debugging or when you implement call tracing.
 .size _start, . - _start

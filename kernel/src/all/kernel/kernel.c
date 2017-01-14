@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 #include <kernel/tty.h>
 #include <kernel/panic.h>
 
@@ -14,24 +16,19 @@
 #endif
  
  
-void kernel_main(multiboot_info_t* multiboot_info) {
+void kernel_main(void* start, void* end,multiboot_info_t* multiboot_info) {
 	/* Initialize terminal interface */
 	terminal_initialize();
  
 	terminal_writestring("In kernel");
 	
-	terminal_writestring("\nmem_lower: ");
-	terminal_writeu32(multiboot_info->mem_lower);
-
-	terminal_writestring("\nmem_upper: ");
-	terminal_writeu32(multiboot_info->mem_upper);
-
-	terminal_writestring("\nmmap_length: ");
-	terminal_writeu32(multiboot_info->mmap_length);
-
-	terminal_writestring("\nmmap_addr: ");
-	terminal_writeu32(multiboot_info->mmap_addr);
+	kernel_log_u32("start", start);
+	kernel_log_u32("end", end);
 	
+	kernel_log_u32("mem_lower", multiboot_info->mem_lower);
+	kernel_log_u32("mem_upper", multiboot_info->mem_upper);
+	kernel_log_u32("mmap_length", multiboot_info->mmap_length);
+	kernel_log_u32("mmap_addr", multiboot_info->mmap_addr);
 	
 	multiboot_memory_map_t* mm = (multiboot_memory_map_t*)multiboot_info->mmap_addr;
 	
@@ -47,5 +44,12 @@ void kernel_main(multiboot_info_t* multiboot_info) {
 		
 		mm = (multiboot_memory_map_t*)((void*)mm+mm->size+sizeof(mm->size));
 	}
+}
+
+void kernel_log_u32(const char* msg, const uint32_t u32) {
+	terminal_writestring("\n");
+	terminal_writestring(msg);
+	terminal_writestring(": ");
+	terminal_writeu32(u32);
 }
 

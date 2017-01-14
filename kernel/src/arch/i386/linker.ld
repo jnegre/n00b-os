@@ -9,6 +9,9 @@ SECTIONS
 	/* Begin putting sections at 1 MiB, a conventional place for kernels to be
 	   loaded at by the bootloader. */
 	. = 1M;
+	
+	/* These labels get exported to the code file */
+	kernel_start = .;
 
 	/* First put the multiboot header, as it is required to be put very early
 	   early in the image or the bootloader won't recognize the file format.
@@ -36,9 +39,12 @@ SECTIONS
 	{
 		*(COMMON)
 		*(.bss)
+		*(.bootstrap_stack)
 	}
 
 	/* The compiler may produce other sections, by default it will put them in
 	   a segment with the same name. Simply add stuff here as needed. */
+
+	kernel_end = .;
 }
 
