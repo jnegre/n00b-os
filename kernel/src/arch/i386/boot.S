@@ -6,7 +6,8 @@
 .set CHECKSUM, -(MAGIC + FLAGS) # checksum of above, to prove we are multiboot
 
 # Declare constants for the multiboot information
-.set BOOTLOADER_MAGIC, 0x2BADB002  #This should be in %eax
+.set BOOTLOADER_MAGIC, 0x2BADB002  # This should be in %eax
+.set MAX_MEMORY_MAP_SIZE, 24*20    # Enough for 20 standard multiboot_memory_map_t
 
 # Declare a multiboot header that marks the program as a kernel. These are magic
 # values that are documented in the multiboot standard. The bootloader will
@@ -25,6 +26,10 @@ msg_early_missing_magic:
 	.asciz "M\360i\360s\360s\360i\360n\360g\360 \360m\360a\360g\360i\360c\360"
 msg_early_too_big:
 	.asciz "K\360e\360r\360n\360e\360l\360 \360>\360 \3604\360M\360b\360"
+msg_early_no_mmap_flag:
+	.asciz "N\360o\360 \360m\360m\360a\360p\360 \360f\360l\360a\360g\360"
+msg_early_too_big_mmap:
+	.asciz "T\360o\360o\360 \360b\360i\360g\360 \360m\360m\360a\360p\360"
 
 #other messages
 msg_return_from_kernel_main:
@@ -53,7 +58,10 @@ boot_pagedir:
 boot_pagetab1:
 	.skip 4096
 	# Further page tables may be required if the kernel grows beyond 3 MiB.
-
+memory_map_length:
+	.skip 16
+memory_map:
+	.skip MAX_MEMORY_MAP_SIZE
 
 # The linker script specifies _start as the entry point to the kernel and the
 # bootloader will jump to this position once the kernel has been loaded. It
@@ -107,6 +115,29 @@ early_panic:
 	cmp $BOOTLOADER_MAGIC, %eax
 	jne early_panic
 	
+	# Check we have a memory map
+	movl $msg_early_no_mmap_flag, %esi
+	movl (%ebx), %eax
+	testl $(1<<6), %eax # bit 6 in the flags entry
+	jz early_panic
+	
+	# get the size of the memory map and check it's not too big
+	movl 44(%ebx), %ecx
+	movl $msg_early_too_big_mmap, %esi
+	cmp $MAX_MEMORY_MAP_SIZE, %ecx
+	jg early_panic
+	
+	# copy memory map
+	# TODO only copy the fields we actually need
+	movl %ecx, memory_map_length
+	movl $memory_map, %edi
+	movl 48(%ebx), %esi
+	rep movsl
+	
+	##
+	## Now let's enable paging
+	##
+	
 	# Check the kernel is small enough to enable paging with a single
 	# Page table of 1024 entries to 4Kb of physical memory
 	movl $msg_early_too_big, %esi
@@ -146,7 +177,8 @@ early_panic:
 	orl $0x80010000, %ecx
 	movl %ecx, %cr0
 	
-	push %ebx #FIXME copy the data in my space or check it's in the 1st 4 Mo
+	push $memory_map
+	push memory_map_length
 	push $kernel_end
 	push $kernel_start
 

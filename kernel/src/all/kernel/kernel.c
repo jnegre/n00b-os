@@ -15,24 +15,23 @@
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
  
- 
-void kernel_main(void* start, void* end,multiboot_info_t* multiboot_info) {
+void kernel_log_u32(const char* msg, const uint32_t u32);
+
+void kernel_main(void* start, void* end, uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	/* Initialize terminal interface */
 	terminal_initialize();
  
 	terminal_writestring("In kernel");
 	
-	kernel_log_u32("start", start);
-	kernel_log_u32("end", end);
+	kernel_log_u32("start", (uint32_t)start);
+	kernel_log_u32("end", (uint32_t)end);
 	
-	kernel_log_u32("mem_lower", multiboot_info->mem_lower);
-	kernel_log_u32("mem_upper", multiboot_info->mem_upper);
-	kernel_log_u32("mmap_length", multiboot_info->mmap_length);
-	kernel_log_u32("mmap_addr", multiboot_info->mmap_addr);
+	kernel_log_u32("mmap_length", mmap_length);
+	kernel_log_u32("mmap_addr", (uint32_t)mmap);
 	
-	multiboot_memory_map_t* mm = (multiboot_memory_map_t*)multiboot_info->mmap_addr;
-	
-	while((void*)mm < (void*)(multiboot_info->mmap_addr+multiboot_info->mmap_length)) {
+	for(multiboot_memory_map_t* mm = mmap;
+			(uint32_t)mm < (uint32_t)(mmap)+mmap_length;
+			mm = (multiboot_memory_map_t*)((uint32_t)mm+mm->size+sizeof(mm->size))) {
 		terminal_writestring("\nSize:");
 		terminal_writeu32(mm->size);
 		terminal_writestring(" addr:");
@@ -41,8 +40,6 @@ void kernel_main(void* start, void* end,multiboot_info_t* multiboot_info) {
 		terminal_writeu64(mm->addr + mm->len - 1);
 		terminal_writestring(" type:");
 		terminal_writeu32(mm->type);
-		
-		mm = (multiboot_memory_map_t*)((void*)mm+mm->size+sizeof(mm->size));
 	}
 }
 
