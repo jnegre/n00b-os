@@ -115,9 +115,8 @@ early_panic:
 	
 	# Check we have a memory map
 	movl $msg_early_no_mmap_flag-KERNEL_BASE_ADDRESS, %esi
-	movl (%ebx), %eax
-	testl $(1<<6), %eax # bit 6 in the flags entry
-	jz early_panic
+	bt $6, (%ebx) # bit 6 in the flags entry
+	jnc early_panic
 	
 	# get the size of the memory map and check it's not too big
 	movl 44(%ebx), %ecx
