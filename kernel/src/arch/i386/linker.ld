@@ -6,9 +6,8 @@ ENTRY(_start)
    kernel image. */
 SECTIONS
 {
-	/* Begin putting sections at 1 MiB, a conventional place for kernels to be
-	   loaded at by the bootloader. */
-	. = 1M;
+	/* Begin putting sections at 3GiB + 1 MiB */
+	. = 3*1024M + 1M;
 	
 	/* These labels get exported to the code file */
 	kernel_start = .;
@@ -16,26 +15,30 @@ SECTIONS
 	/* First put the multiboot header, as it is required to be put very early
 	   early in the image or the bootloader won't recognize the file format.
 	   Next we'll put the .text section. */
-	.text BLOCK(4K) : ALIGN(4K)
+	/* Loads AT 1MiB */
+	.text BLOCK(4K) : AT(ADDR(.text) - 3*1024M) ALIGN(4K)
 	{
 		*(.multiboot)
 		*(.text)
 	}
 
 	/* Read-only data. */
-	.rodata BLOCK(4K) : ALIGN(4K)
+	/* Loads AT 1MiB */
+	.rodata BLOCK(4K) : AT(ADDR(.rodata) - 3*1024M) ALIGN(4K)
 	{
 		*(.rodata)
 	}
 
 	/* Read-write data (initialized) */
-	.data BLOCK(4K) : ALIGN(4K)
+	/* Loads AT 1MiB */
+	.data BLOCK(4K) : AT(ADDR(.data) - 3*1024M) ALIGN(4K)
 	{
 		*(.data)
 	}
 
 	/* Read-write data (uninitialized) and stack */
-	.bss BLOCK(4K) : ALIGN(4K)
+	/* Loads AT 1MiB */
+	.bss BLOCK(4K) : AT(ADDR(.bss) - 3*1024M) ALIGN(4K)
 	{
 		*(COMMON)
 		*(.bss)

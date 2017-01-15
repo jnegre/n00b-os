@@ -9,6 +9,10 @@
 .set BOOTLOADER_MAGIC, 0x2BADB002  # This should be in %eax
 .set MAX_MEMORY_MAP_SIZE, 24*20    # Enough for 20 standard multiboot_memory_map_t
 
+# The kernel is located at 3GiB (+ 1MiB) but loaded at 1MiB.
+# Until paging is enabled, we must substract this value to all addresses.
+.set KERNEL_BASE_ADDRESS, 0xC0000000
+
 # Declare a multiboot header that marks the program as a kernel. These are magic
 # values that are documented in the multiboot standard. The bootloader will
 # search for this signature in the first 8 KiB of the kernel file, aligned at a
@@ -72,15 +76,9 @@ memory_map:
 _start:
 	# The bootloader has loaded us into 32-bit protected mode on a x86
 	# machine. Interrupts are disabled. Paging is disabled. The processor
-	# state is as defined in the multiboot standard. The kernel has full
-	# control of the CPU. The kernel can only make use of hardware features
-	# and any code it provides as part of itself. There's no printf
-	# function, unless the kernel provides its own <stdio.h> header and a
-	# printf implementation. There are no security restrictions, no
-	# safeguards, no debugging mechanisms, only what the kernel provides
-	# itself. It has absolute and complete power over the
-	# machine.
-
+	# state is as defined in the multiboot standard.
+	
+	# FIXME do this after paging is enabled
 	# To set up a stack, we set the esp register to point to the top of our
 	# stack (as it grows downwards on x86 systems). This is necessarily done
 	# in assembly as languages such as C cannot function without a stack.
@@ -111,26 +109,26 @@ early_panic:
 	jmp early_panic
 1:
 	# Check eax to verify that we've been loaded by a compatible bootloader
-	movl $msg_early_missing_magic, %esi
+	movl $msg_early_missing_magic-KERNEL_BASE_ADDRESS, %esi
 	cmp $BOOTLOADER_MAGIC, %eax
 	jne early_panic
 	
 	# Check we have a memory map
-	movl $msg_early_no_mmap_flag, %esi
+	movl $msg_early_no_mmap_flag-KERNEL_BASE_ADDRESS, %esi
 	movl (%ebx), %eax
 	testl $(1<<6), %eax # bit 6 in the flags entry
 	jz early_panic
 	
 	# get the size of the memory map and check it's not too big
 	movl 44(%ebx), %ecx
-	movl $msg_early_too_big_mmap, %esi
+	movl $msg_early_too_big_mmap-KERNEL_BASE_ADDRESS, %esi
 	cmp $MAX_MEMORY_MAP_SIZE, %ecx
 	jg early_panic
-	
+
 	# copy memory map
 	# TODO only copy the fields we actually need
-	movl %ecx, memory_map_length
-	movl $memory_map, %edi
+	movl %ecx, memory_map_length-KERNEL_BASE_ADDRESS
+	movl $memory_map-KERNEL_BASE_ADDRESS, %edi
 	movl 48(%ebx), %esi
 	rep movsl
 	
@@ -140,14 +138,14 @@ early_panic:
 	
 	# Check the kernel is small enough to enable paging with a single
 	# Page table of 1024 entries to 4Kb of physical memory
-	movl $msg_early_too_big, %esi
-	movl $kernel_end, %eax
+	movl $msg_early_too_big-KERNEL_BASE_ADDRESS, %esi
+	movl $kernel_end-KERNEL_BASE_ADDRESS, %eax
 	#subl $kernel_start, %eax
 	cmp $4*1024*1024, %eax #4mb
 	jge early_panic
 	
 	# Now fill the page table
-	movl $boot_pagetab1, %edi
+	movl $boot_pagetab1-KERNEL_BASE_ADDRESS, %edi
 	movl $0, %esi #map from the 1st byte of RAM
 	movl $1024, %ecx #map 1024 pages
 	
@@ -166,10 +164,12 @@ early_panic:
 	loop 4b
 	
 	# Map the page table to virtual addresses 0x00000000.
-	movl $(boot_pagetab1 + 0x003), boot_pagedir + 0 # +0x003 -> activate RW + Present
+	movl $(boot_pagetab1 - KERNEL_BASE_ADDRESS + 0x003), boot_pagedir-KERNEL_BASE_ADDRESS + 0 # +0x003 -> activate RW + Present
+	# Map the page table to virtual addresses 0xC0000000 (entry 768).
+	movl $(boot_pagetab1 - KERNEL_BASE_ADDRESS + 0x003), boot_pagedir-KERNEL_BASE_ADDRESS + 768*4 # +0x003 -> activate RW + Present
 
 	# Set cr3 to the address of the boot_page_directory.
-	movl $(boot_pagedir), %ecx
+	movl $(boot_pagedir-KERNEL_BASE_ADDRESS), %ecx
 	movl %ecx, %cr3
 
 	# Enable paging and the write-protect bit.
@@ -177,6 +177,17 @@ early_panic:
 	orl $0x80010000, %ecx
 	movl %ecx, %cr0
 	
+	# Jump to higher half with an absolute jump.
+	movl $higher_half, %eax
+	jmp *%eax
+	
+higher_half:
+	# Yeah, no more KERNEL_BASE_ADDRESS shenanigans!
+
+	# Remove identity mapping.
+	movl $0, boot_pagedir + 0
+	invlpg (0)
+
 	push $memory_map
 	push memory_map_length
 
