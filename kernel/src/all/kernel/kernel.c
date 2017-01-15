@@ -14,17 +14,22 @@
 #if !defined(__i386__)
 #error "This tutorial needs to be compiled with a ix86-elf compiler"
 #endif
- 
+
+// Defined by the linker script
+// Use only their address, as their value is meaningless
+extern int kernel_start;
+extern int kernel_end;
+
 void kernel_log_u32(const char* msg, const uint32_t u32);
 
-void kernel_main(void* start, void* end, uint32_t mmap_length, multiboot_memory_map_t* mmap) {
+void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	/* Initialize terminal interface */
 	terminal_initialize();
  
 	terminal_writestring("In kernel");
 	
-	kernel_log_u32("start", (uint32_t)start);
-	kernel_log_u32("end", (uint32_t)end);
+	kernel_log_u32("kernel_start", (uint32_t)&kernel_start);
+	kernel_log_u32("kernel_end", (uint32_t)&kernel_end);
 	
 	kernel_log_u32("mmap_length", mmap_length);
 	kernel_log_u32("mmap_addr", (uint32_t)mmap);

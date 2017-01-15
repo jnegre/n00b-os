@@ -179,8 +179,6 @@ early_panic:
 	
 	push $memory_map
 	push memory_map_length
-	push $kernel_end
-	push $kernel_start
 
 	# Enter the high-level kernel. The ABI requires the stack is 16-byte
 	# aligned at the time of the call instruction (which afterwards pushes
