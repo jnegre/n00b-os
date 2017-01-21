@@ -62,6 +62,9 @@ boot_pagedir:
 boot_pagetab1:
 	.skip 4096
 	# Further page tables may be required if the kernel grows beyond 3 MiB.
+.global mm_freepage
+mm_freepage:
+	.skip 4096
 memory_map_length:
 	.skip 16
 memory_map:
@@ -144,9 +147,10 @@ early_panic:
 	jge early_panic
 	
 	# Now fill the page table
+	# FIXME we should only map up to kernel_physical_end
 	movl $boot_pagetab1-KERNEL_BASE_ADDRESS, %edi
 	movl $0, %esi #map from the 1st byte of RAM
-	movl $1024, %ecx #map 1024 pages
+	movl $1024, %ecx #map 1024 pages.
 	
 4:	
 	# Map physical address as "present, writable". Note that this maps
@@ -165,8 +169,10 @@ early_panic:
 	# Map the page table to virtual addresses 0x00000000.
 	movl $(boot_pagetab1 - KERNEL_BASE_ADDRESS + 0x003), boot_pagedir-KERNEL_BASE_ADDRESS + 0 # +0x003 -> activate RW + Present
 	# Map the page table to virtual addresses 0xC0000000 (entry 768).
-	movl $(boot_pagetab1 - KERNEL_BASE_ADDRESS + 0x003), boot_pagedir-KERNEL_BASE_ADDRESS + 768*4 # +0x003 -> activate RW + Present
-
+	movl $(boot_pagetab1 - KERNEL_BASE_ADDRESS + 0x003), boot_pagedir-KERNEL_BASE_ADDRESS + 768*4
+	# Map the directory to itself at 0xFFC00000 (Recursive Page Directory).
+	movl $(boot_pagedir - KERNEL_BASE_ADDRESS + 0x003), boot_pagedir-KERNEL_BASE_ADDRESS + 1023*4
+	
 	# Set cr3 to the address of the boot_page_directory.
 	movl $(boot_pagedir-KERNEL_BASE_ADDRESS), %ecx
 	movl %ecx, %cr3

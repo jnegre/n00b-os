@@ -49,5 +49,6 @@ SECTIONS
 	   a segment with the same name. Simply add stuff here as needed. */
 
 	kernel_end = .;
+	kernel_physical_end = . - 3*1024M;
 }
 
