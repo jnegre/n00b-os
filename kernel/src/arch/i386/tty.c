@@ -73,8 +73,16 @@ void terminal_putchar(char c) {
 	}
 	if (c == '\n' || ++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
-		if (++terminal_row == VGA_HEIGHT)
-			terminal_row = 0;
+		if (++terminal_row == VGA_HEIGHT) {
+			//scroll up
+			terminal_row = VGA_HEIGHT-1;
+			memcpy(terminal_buffer, &terminal_buffer[VGA_WIDTH], 2*(VGA_HEIGHT-1)*VGA_WIDTH);
+			//clear last line
+			for (size_t x = 0; x < VGA_WIDTH; x++) {
+				const size_t index = (VGA_HEIGHT-1) * VGA_WIDTH + x;
+				terminal_buffer[index] = vga_entry(' ', terminal_color);
+			}
+		}
 	}
 }
  
