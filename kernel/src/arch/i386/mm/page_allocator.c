@@ -103,22 +103,23 @@ static void mark_page(uintptr_t physical_addr, uintptr_t next) {
 
 
 //FIXME sync
-//FIXME handle OOM
 uintptr_t mm_alloc_physical_page(const bool zero) {
 	uintptr_t page = first_free_page;
-	// map
-	uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
-	page_table[mm_freepage_info.page] = page | 3;
-	invlpg((void*)&mm_freepage);
-	// read next
-	first_free_page = mm_freepage;
-	// zero page if requested
-	if(zero) {
-		memset((void*)&mm_freepage, 0, 4096);
+	if(page != 0) {
+		// map
+		uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
+		page_table[mm_freepage_info.page] = page | 3;
+		invlpg((void*)&mm_freepage);
+		// read next
+		first_free_page = mm_freepage;
+		// zero page if requested
+		if(zero) {
+			memset((void*)&mm_freepage, 0, 4096);
+		}
+		// unmap
+		page_table[mm_freepage_info.page] = 0;
+		invlpg((void*)&mm_freepage);
 	}
-	// unmap
-	page_table[mm_freepage_info.page] = 0;
-	invlpg((void*)&mm_freepage);
 	return page;
 }
 
@@ -138,7 +139,13 @@ void mm_free_physical_page(uintptr_t physical_addr){
 }
 
 //FIXME sync
+/*
+ * Does not allow to map 0 or to 0
+ */
 int mm_map_page(uintptr_t phys_address, uintptr_t virt_address){
+	if(phys_address == 0 || virt_address == 0) {
+		return -1;
+	}
 	pageinfo pginf = mm_virtaddrtopageindex(virt_address); // get the PDE and PTE indexes for the addr
 	
 	if(kernel_page_dir[pginf.pagetable] & 1) {

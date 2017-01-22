@@ -1,6 +1,9 @@
 Address | What | Note
 --------|------|-----
-0xC0000000 | Start of low 1M memory mapping |
+0x00000000 | Unmappable memory | 4k
+0x00001000 | Start of user space |
+....||
+0xC0000000 | Start of kernel space; Maps low 1M memory |
 0xC00B8000 | VGA screen |
 0xC00FFFFF | Last byte of low 1M memory mapping |
 0xC0100000 | kernel_start | 
