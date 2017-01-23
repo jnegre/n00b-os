@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <arch/x86/multiboot.h> //FIXME remove this dependency
 
+void mm_init_stack(void);
+
 void mm_init_page_allocator(uint32_t mmap_length, multiboot_memory_map_t* mmap);
 
 uintptr_t mm_alloc_physical_page(const bool zero);

@@ -50,16 +50,19 @@ msg_return_from_kernel_main:
 # stack is properly aligned and failure to align the stack will result in
 # undefined behavior.
 .section .bootstrap_stack, "aw", @nobits
-	.align 16
+	.align 4096 #FIXME needed? already specified in linker.ld
+.global stack_bottom
 stack_bottom:
-	.skip 16384 # 16 KiB
+	.skip 4096 # 4 KiB
 stack_top:
 
 .section .bss
 	.align 4096 #required for page directory + page table
 boot_pagedir:
 	.skip 4096
-boot_pagetab1:
+boot_pagetab1: # For the kernel
+	.skip 4096
+boot_pagetab2: # For the stack
 	.skip 4096
 	# Further page tables may be required if the kernel grows beyond 3 MiB.
 .global mm_freepage
@@ -81,11 +84,6 @@ _start:
 	# machine. Interrupts are disabled. Paging is disabled. The processor
 	# state is as defined in the multiboot standard.
 	
-	# FIXME do this after paging is enabled
-	# To set up a stack, we set the esp register to point to the top of our
-	# stack (as it grows downwards on x86 systems). This is necessarily done
-	# in assembly as languages such as C cannot function without a stack.
-	mov $stack_top, %esp
 
 	# This is a good place to initialize crucial processor state before the
 	# high-level kernel is entered. It's best to minimize the early
@@ -193,6 +191,29 @@ higher_half:
 	movl $0, boot_pagedir + 0
 	invlpg (0)
 
+	#move the yet single page of the stack to 0xFFBFF000
+	movl $(boot_pagetab2-KERNEL_BASE_ADDRESS + 0x003), boot_pagedir + 1022*4
+	invlpg (boot_pagetab2)
+	movl $(stack_bottom-KERNEL_BASE_ADDRESS + 0x003), boot_pagetab2 + 1023*4
+	invlpg (0xFFBFF000)
+
+	# To set up a stack, we set the esp register to point to the top of our
+	# stack (as it grows downwards on x86 systems). This is necessarily done
+	# in assembly as languages such as C cannot function without a stack.
+	mov $0xFFBFFFF0, %esp
+
+	# leave some place for the task_info
+	pushl $0
+	pushl $0
+	# canari
+	pushl $0
+	pushl $0xDEADBEEF
+
+	# for correct alignment of the stack
+	pushl $0
+	pushl $0
+
+	# parameters for kernel_main
 	push $memory_map
 	push memory_map_length
 
@@ -200,7 +221,7 @@ higher_half:
 	# aligned at the time of the call instruction (which afterwards pushes
 	# the return pointer of size 4 bytes). The stack was originally 16-byte
 	# aligned above and we've since pushed a multiple of 16 bytes to the
-	# stack since (pushed 0 bytes so far) and the alignment is thus
+	# stack since (pushed 32 bytes so far) and the alignment is thus
 	# preserved and the call is well defined.
 	call kernel_main
 

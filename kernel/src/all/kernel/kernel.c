@@ -49,6 +49,7 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 		terminal_writeu32(mm->type);
 	}
 	mm_init_page_allocator(mmap_length, mmap);
+	mm_init_stack();
 	
 	//let's test the mm
 	test_mm_page_allocator();

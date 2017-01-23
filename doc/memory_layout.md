@@ -10,13 +10,15 @@ Address | What | Note
 ? | mm_freepage | 4k to be used by the mm (4k aligned)
 ? | kernel_end |
 ....||
-0xFFBFE000 | | start of the 1st page of stack (TBD)
-0xFFBFE00C | | canari (4) (TBD)
-0xFFBFE010 | | top of stack (TBD)
-....|| stack, almost 8k (TBD)
-0xFFBFFFF0 | | bottom of stack, goes towards lower memory (8k - 16 aligned) (TBD)
-0xFFBFFFF0 | | canari (4) (TBD)
-0xFFBFFFF8 | | task_info (init) (=(ESP and FFFFE000) or 3FF8) (TBD)
+0xFFBFC000 | | start of the 1st page of stack
+0xFFBFC00C | | canari 0xDEADBEEF (4)
+0xFFBFC010 | | top of stack (almost 16k)
+0xFFBFD000 | | start of 2nd page of stack
+0xFFBFE000 | | start of 3rd page of stack
+0xFFBFF000 | | start of 4th page of stack
+0xFFBFFFF0 | | bottom of stack, goes towards lower memory (16k - 16 aligned)
+0xFFBFFFF0 | | canari 0xDEADBEEF (4)
+0xFFBFFFF8 | | task_info (init) (=(ESP and FFFFD000) or 3FF8) (TBD)
 0xFFC00000 | Page Table #0 | 4k
 0xFFC01000 | Page Table #1 | 4k
 ....||
