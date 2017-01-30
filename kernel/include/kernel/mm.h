@@ -4,6 +4,13 @@
 #include <stdbool.h>
 #include <arch/x86/multiboot.h> //FIXME remove this dependency
 
+#define MM_PAGE_SIZE 4096
+
+typedef struct mm_info {
+    uintptr_t heap_start;
+    uintptr_t heap_end;
+} mm_info_t;
+
 void mm_init_stack(void);
 
 void mm_init_page_allocator(uint32_t mmap_length, multiboot_memory_map_t* mmap);

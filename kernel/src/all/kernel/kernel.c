@@ -1,10 +1,12 @@
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <test/mm.h>
 
 #include <kernel/tty.h>
 #include <kernel/panic.h>
 #include <kernel/mm.h>
+#include <kernel/sched.h>
 #include <arch/x86/multiboot.h>
 
 /* Check if the compiler thinks we are targeting the wrong operating system. */
@@ -50,9 +52,15 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	}
 	mm_init_page_allocator(mmap_length, mmap);
 	mm_init_stack();
+	sched_init_process_control_block();
 	
+	terminal_writestring("\nheap at ");
+	terminal_writeu32(current_process_control_block()->mm_info->heap_start);
+
 	//let's test the mm
-	test_mm_page_allocator();
+	//test_mm_page_allocator();
+	//and malloc
+	test_malloc();
 }
 
 void kernel_log_u32(const char* msg, const uint32_t u32) {

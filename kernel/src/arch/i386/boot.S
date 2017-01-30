@@ -154,9 +154,15 @@ early_panic:
 	# Map physical address as "present, writable". Note that this maps
 	# .text and .rodata as writable.
 	# FIXME Mind security and map them as non-writable.
+
+	movl $0, (%edi) # not mapped 
+	cmp $kernel_physical_end, %esi
+	jge 5f
+	# except if under kernel_physical_end
 	movl %esi, %edx
 	orl $0x003, %edx
 	movl %edx, (%edi)
+5:
 	# Size of page is 4096 bytes.
 	addl $4096, %esi
 	# Size of entries in boot_pagetab1 is 4 bytes.

@@ -9,6 +9,9 @@ Address | What | Note
 0xC0100000 | kernel_start | 
 ? | mm_freepage | 4k to be used by the mm (4k aligned)
 ? | kernel_end |
+? | mm_info->heap_start |
+....|| Heap
+? | mm_info->heap_end |
 ....||
 0xFFBFC000 | | start of the 1st page of stack
 0xFFBFC00C | | canari 0xDEADBEEF (4)
