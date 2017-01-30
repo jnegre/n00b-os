@@ -211,7 +211,7 @@ higher_half:
 	# leave some place for the task_info
 	pushl $0
 	pushl $0
-	# canari
+	# canary
 	pushl $0
 	pushl $0xDEADBEEF
 

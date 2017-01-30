@@ -8,7 +8,7 @@ extern int stack_bottom;
 
 /*
  * Extends the bootstrap stack to its final size.
- * Add the missing top canari.
+ * Add the missing top canary.
  */
 void mm_init_stack(void) {
 	// add 3 more pages for the stack
@@ -21,7 +21,7 @@ void mm_init_stack(void) {
 			panic("Can't map new page for the stack");
 		}
 	}
-	//add the canari at the top
+	//add the canary at the top
 	*(uint32_t*)(0xFFBFC00C) = 0xDEADBEEF;
 	terminal_writestring("\nStack is now 16k long");
 }
