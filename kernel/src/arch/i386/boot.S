@@ -56,6 +56,25 @@ stack_bottom:
 	.skip 4096 # 4 KiB
 stack_top:
 
+.section .data
+	.align 8 #(see Intel 3A section 3.5.1)
+gdt:
+	.macro gdt_entry access:req, base=0, limit=0xFFFFF, flags=0b1100
+	.byte (\limit & 0xFF), (\limit & 0xFF00) >> 8
+	.byte (\base & 0xFF), (\base & 0xFF00) >> 8
+	.byte (\base & 0xFF0000) >> 16
+	.byte \access
+	.byte ((\flags << 4) | ((\limit & 0xF0000) >> 16))
+	.byte (\base & 0xFF000000) >> 24
+	.endm
+
+	gdt_entry limit=0, flags=0, access=0 # Null descriptor
+	gdt_entry 0b10011010 # Code segment, kernel
+	gdt_entry 0b10010010 # Data segment, kernel
+gdt_info:
+	.word gdt_info - gdt - 1
+	.long gdt-KERNEL_BASE_ADDRESS
+
 .section .bss
 	.align 4096 #required for page directory + page table
 boot_pagedir:
@@ -133,6 +152,21 @@ early_panic:
 	rep movsl
 	
 	##
+	## Load GDT
+	##
+	lgdt (gdt_info-KERNEL_BASE_ADDRESS)
+	# reload segments
+	jmp $0x08, $reload_CS-KERNEL_BASE_ADDRESS # 0x08 points at the new code selector
+reload_CS:
+	# Reload data segment registers
+	mov $0x10, %ax # 0x10 points at the new data selector
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ss
+
+	##
 	## Now let's enable paging
 	##
 	
@@ -145,7 +179,6 @@ early_panic:
 	jge early_panic
 	
 	# Now fill the page table
-	# FIXME we should only map up to kernel_physical_end
 	movl $boot_pagetab1-KERNEL_BASE_ADDRESS, %edi
 	movl $0, %esi #map from the 1st byte of RAM
 	movl $1024, %ecx #map 1024 pages.
