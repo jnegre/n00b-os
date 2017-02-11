@@ -57,7 +57,7 @@ stack_bottom:
 stack_top:
 
 .section .data
-	.align 8 #(see Intel 3A section 3.5.1)
+	.align 4 #(see Intel 3A section 3.5.1)
 gdt:
 	.macro gdt_entry access:req, base=0, limit=0xFFFFF, flags=0b1100
 	.byte (\limit & 0xFF), (\limit & 0xFF00) >> 8
@@ -73,7 +73,7 @@ gdt:
 	gdt_entry 0b10010010 # Data segment, kernel
 gdt_info:
 	.word gdt_info - gdt - 1
-	.long gdt-KERNEL_BASE_ADDRESS
+	.long gdt
 
 .section .bss
 	.align 4096 #required for page directory + page table
@@ -152,21 +152,6 @@ early_panic:
 	rep movsl
 	
 	##
-	## Load GDT
-	##
-	lgdt (gdt_info-KERNEL_BASE_ADDRESS)
-	# reload segments
-	jmp $0x08, $reload_CS-KERNEL_BASE_ADDRESS # 0x08 points at the new code selector
-reload_CS:
-	# Reload data segment registers
-	mov $0x10, %ax # 0x10 points at the new data selector
-	mov %ax, %ds
-	mov %ax, %es
-	mov %ax, %fs
-	mov %ax, %gs
-	mov %ax, %ss
-
-	##
 	## Now let's enable paging
 	##
 	
@@ -230,6 +215,22 @@ higher_half:
 	movl $0, boot_pagedir + 0
 	invlpg (0)
 
+	##
+	## Load GDT
+	##
+	lgdt (gdt_info)
+	# reload segments
+	jmp $0x08, $reload_CS # 0x08 points at the new code selector
+reload_CS:
+	# Reload data segment registers
+	mov $0x10, %ax # 0x10 points at the new data selector
+	mov %ax, %ds
+	mov %ax, %es
+	mov %ax, %fs
+	mov %ax, %gs
+	mov %ax, %ss
+
+
 	#move the yet single page of the stack to 0xFFBFF000
 	movl $(boot_pagetab2-KERNEL_BASE_ADDRESS + 0x003), boot_pagedir + 1022*4
 	invlpg (boot_pagetab2)
@@ -247,6 +248,9 @@ higher_half:
 	# canary
 	pushl $0
 	pushl $0xDEADBEEF
+
+	# set up minimal interrupts
+	call itr_init
 
 	# for correct alignment of the stack
 	pushl $0
