@@ -23,18 +23,18 @@ Vector | Type | Handled? | Description
 20 | Fault | N | Virtualization Exception
 21-31 | | N | Intel reserved
 32 | IRQ | N | 0 - Programmable Interrupt Timer
-33 | IRQ | N | 1 - Keyboard
-34 | IRQ | N | 2 - Cascade (used internally, never raised)
-35 | IRQ | N | 3 - COM2
-36 | IRQ | N | 4 - COM1
-37 | IRQ | N | 5 - LPT2
-38 | IRQ | N | 6 - Floppy Disk
-39 | IRQ | N | 7 - LPT1 (spurious interrupt)
-40 | IRQ | N | 8 - CMOS real-time clock
-41 | IRQ | N | 9 - Free for peripherals / SCSI / NIC 
-42 | IRQ | N | 10 - Free for peripherals / SCSI / NIC 
-43 | IRQ | N | 11 - Free for peripherals / SCSI / NIC 
-44 | IRQ | N | 12 - PS2 Mouse
-45 | IRQ | N | 13 - FPU
-46 | IRQ | N | 14 - Primary ATA Hard Disk 
-47 | IRQ | N | 15 - Secondary ATA Hard Disk
+33 | IRQ | N | 1 - Keyboard
+34 | IRQ | N | 2 - Cascade (used internally, never raised)
+35 | IRQ | N | 3 - COM2
+36 | IRQ | N | 4 - COM1
+37 | IRQ | N | 5 - LPT2
+38 | IRQ | N | 6 - Floppy Disk
+39 | IRQ | N | 7 - LPT1 (spurious interrupt)
+40 | IRQ | N | 8 - CMOS real-time clock
+41 | IRQ | N | 9 - Free for peripherals / SCSI / NIC 
+42 | IRQ | N | 10 - Free for peripherals / SCSI / NIC 
+43 | IRQ | N | 11 - Free for peripherals / SCSI / NIC 
+44 | IRQ | N | 12 - PS2 Mouse
+45 | IRQ | N | 13 - FPU
+46 | IRQ | N | 14 - Primary ATA Hard Disk 
+47 | IRQ | N | 15 - Secondary ATA Hard Disk
