@@ -1,8 +1,8 @@
 #include <stdbool.h>
+#include <stdio.h> //FIXME remove
 
 #include <kernel/mm.h>
 #include <kernel/panic.h>
-#include <kernel/tty.h> //FIXME remove
 
 extern int stack_bottom;
 
@@ -23,5 +23,5 @@ void mm_init_stack(void) {
 	}
 	//add the canary at the top
 	*(uint32_t*)(0xFFBFC00C) = 0xDEADBEEF;
-	terminal_writestring("\nStack is now 16k long");
+	printf("Stack is now 16k long\n");
 }

@@ -1,12 +1,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 
 #include <kernel/mm.h>
 #include <kernel/sync.h>
 #include <arch/x86/multiboot.h>
-#include <kernel/tty.h> //FIXME debug
 
 extern int kernel_physical_end;
 extern volatile uintptr_t mm_freepage; // virtual address to temporary map to
@@ -74,8 +74,7 @@ void mm_init_page_allocator(uint32_t mmap_length, multiboot_memory_map_t* mmap) 
 	}
 	mark_page(previous, 0);// close the linked list
 	// stats
-	terminal_writestring("\nMarked physical pages: ");
-	terminal_writeu32(stat_mark);
+	printf("Marked physical pages: %u\n", stat_mark);
 
 }
 

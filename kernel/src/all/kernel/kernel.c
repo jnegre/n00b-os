@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <test/mm.h>
 
@@ -24,49 +25,38 @@
 extern int kernel_start;
 extern int kernel_end;
 
-void kernel_log_u32(const char* msg, const uint32_t u32);
-
 void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	/* Initialize terminal interface */
 	terminal_initialize();
  
-	terminal_writestring("In kernel");
-	
-	kernel_log_u32("kernel_start", (uint32_t)&kernel_start);
-	kernel_log_u32("kernel_end", (uint32_t)&kernel_end);
-	
-	kernel_log_u32("mmap_length", mmap_length);
-	kernel_log_u32("mmap_addr", (uint32_t)mmap);
-	
+	printf("In %c kernel\n", 'C');
+	printf("Kernel start: 0x%X end: 0x%X (%u kb)\n", &kernel_start, &kernel_end, (&kernel_end - &kernel_start)/1024);
+	printf("Memory map length %u at addr 0x%X\n", mmap_length, mmap);
+
 	for(multiboot_memory_map_t* mm = mmap;
 			(uint32_t)mm < (uint32_t)(mmap)+mmap_length;
 			mm = (multiboot_memory_map_t*)((uint32_t)mm+mm->size+sizeof(mm->size))) {
-		terminal_writestring("\nSize:");
-		terminal_writeu32(mm->size);
-		terminal_writestring(" addr:");
-		terminal_writeu64(mm->addr);
-		terminal_writestring(" to:");
-		terminal_writeu64(mm->addr + mm->len - 1);
-		terminal_writestring(" type:");
-		terminal_writeu32(mm->type);
+
+		printf(" - size:%u addr: 0x%J to: 0x%J type: %u\n", mm->size, mm->addr, mm->addr + mm->len - 1, mm->type);
 	}
 	mm_init_page_allocator(mmap_length, mmap);
 	mm_init_stack();
 	sched_init_process_control_block();
-	
-	terminal_writestring("\nheap at ");
-	terminal_writeu32(current_process_control_block()->mm_info->heap_start);
+
+	process_control_block_t *pcb = current_process_control_block();
+	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
+		pcb->mm_info->heap_start,
+		pcb->mm_info->heap_end,
+		(pcb->mm_info->heap_end - pcb->mm_info->heap_start)
+		);
 
 	//let's test the mm
 	//test_mm_page_allocator();
 	//and malloc
 	test_malloc();
+	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
+		pcb->mm_info->heap_start,
+		pcb->mm_info->heap_end,
+		(pcb->mm_info->heap_end - pcb->mm_info->heap_start)
+		);
 }
-
-void kernel_log_u32(const char* msg, const uint32_t u32) {
-	terminal_writestring("\n");
-	terminal_writestring(msg);
-	terminal_writestring(": ");
-	terminal_writeu32(u32);
-}
-
