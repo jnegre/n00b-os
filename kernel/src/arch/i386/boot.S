@@ -50,7 +50,7 @@ msg_return_from_kernel_main:
 # stack is properly aligned and failure to align the stack will result in
 # undefined behavior.
 .section .bootstrap_stack, "aw", @nobits
-	.align 4096 #FIXME needed? already specified in linker.ld
+	.align 4096
 .global stack_bottom
 stack_bottom:
 	.skip 4096 # 4 KiB
