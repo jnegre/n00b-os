@@ -11,7 +11,7 @@
 extern int kernel_physical_end;
 extern volatile uintptr_t mm_freepage; // virtual address to temporary map to
                                        // FIXME take care of the physical memory at this addr at boot
-//TODO static spinlock_t lock = SPIN_LOCK_INIT;
+static mutex_t mutex = MUTEX_INIT;
 static uintptr_t *kernel_page_dir = (uintptr_t*) 0xFFFFF000; // last page in vmem is mapped to the page dir
 static uintptr_t first_free_page = 0;
 
@@ -101,8 +101,8 @@ static void mark_page(uintptr_t physical_addr, uintptr_t next) {
 }
 
 
-//FIXME sync
 uintptr_t mm_alloc_physical_page(const bool zero) {
+	mutex_acquire(&mutex);
 	uintptr_t page = first_free_page;
 	if(page != 0) {
 		// map
@@ -119,11 +119,12 @@ uintptr_t mm_alloc_physical_page(const bool zero) {
 		page_table[mm_freepage_info.page] = 0;
 		invlpg((void*)&mm_freepage);
 	}
+	mutex_release(&mutex);
 	return page;
 }
 
-//FIXME sync
 void mm_free_physical_page(uintptr_t physical_addr){
+	mutex_acquire(&mutex);
 	// map
 	uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
 	page_table[mm_freepage_info.page] = physical_addr | 3;
@@ -135,9 +136,9 @@ void mm_free_physical_page(uintptr_t physical_addr){
 	invlpg((void*)&mm_freepage);
 	// update
 	first_free_page = physical_addr;
+	mutex_release(&mutex);
 }
 
-//FIXME sync
 /*
  * Does not allow to map 0 or to 0
  */
@@ -147,6 +148,7 @@ int mm_map_page(uintptr_t phys_address, uintptr_t virt_address){
 	}
 	pageinfo pginf = mm_virtaddrtopageindex(virt_address); // get the PDE and PTE indexes for the addr
 	
+	mutex_acquire(&mutex);
 	if(kernel_page_dir[pginf.pagetable] & 1) {
 		// page table exists.
 		uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (pginf.pagetable * 0x1000)); // virt addr of page table
@@ -155,6 +157,7 @@ int mm_map_page(uintptr_t phys_address, uintptr_t virt_address){
 			page_table[pginf.page] = phys_address | 3;
 		} else {
 			// page is already mapped
+			mutex_release(&mutex);
 			return -1; //FIXME use const
 		}
 	} else {
@@ -167,13 +170,14 @@ int mm_map_page(uintptr_t phys_address, uintptr_t virt_address){
 		page_table[pginf.page] = phys_address | 3; // map the page!
 	}
 	invlpg((void*)virt_address);
+	mutex_release(&mutex);
 	return 0; //FIXME use const
 }
 
-//FIXME sync
 void mm_unmap_page(uintptr_t virt_address){
 	pageinfo pginf = mm_virtaddrtopageindex(virt_address);
 	
+	mutex_acquire(&mutex);
 	if(kernel_page_dir[pginf.pagetable] & 1) {
 		int i;
 		uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (pginf.pagetable * 0x1000));
@@ -197,4 +201,5 @@ void mm_unmap_page(uintptr_t virt_address){
 			invlpg(page_table);
 		}
 	}
+	mutex_release(&mutex);
 }

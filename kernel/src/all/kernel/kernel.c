@@ -26,6 +26,7 @@ extern int kernel_start;
 extern int kernel_end;
 
 void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
+	sched_init_process_control_block();
 	/* Initialize terminal interface */
 	terminal_initialize();
  
@@ -41,7 +42,6 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	}
 	mm_init_page_allocator(mmap_length, mmap);
 	mm_init_stack();
-	sched_init_process_control_block();
 
 	process_control_block_t *pcb = current_process_control_block();
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",

@@ -4,6 +4,8 @@
 #include <kernel/mm.h>
 
 typedef struct process_control_block {
+	uint16_t tgid; // thread group id aka pid
+	uint16_t tid; // thread id
 	mm_info_t* mm_info;
 } process_control_block_t;
 

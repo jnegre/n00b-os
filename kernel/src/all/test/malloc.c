@@ -77,7 +77,7 @@ void test_malloc(void) {
 
 	// more stress test
 	int *p8;
-	for(int i=1; i<1000000; i++) {
+	for(int i=1; i<2000000; i++) {
 		p8 = malloc(i*sizeof(int));
 		assert_not_null("malloc returned non NULL", (uintptr_t)p8);
 		p8[0] = i;
