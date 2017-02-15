@@ -8,7 +8,7 @@
  */
 
 typedef struct spinlock {
-	volatile uint16_t lock;
+	volatile uint32_t lock;
 } spinlock_t;
 
 #define SPIN_LOCK_INIT \
@@ -24,7 +24,7 @@ void spin_unlock(spinlock_t* lock);
  */
 
 typedef struct mutex {
-	volatile uint16_t lock;
+	volatile uint32_t lock;
 	uint16_t level;
 } mutex_t;
 

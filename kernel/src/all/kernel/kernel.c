@@ -29,8 +29,10 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	sched_init_process_control_block();
 	/* Initialize terminal interface */
 	terminal_initialize();
+
+	process_control_block_t *pcb = current_process_control_block();
  
-	printf("In %c kernel\n", 'C');
+	printf("In %c kernel (tgid=%u tid=%u)\n", 'C', pcb->tgid, pcb->tid);
 	printf("Kernel start: 0x%X end: 0x%X (%u kb)\n", &kernel_start, &kernel_end, (&kernel_end - &kernel_start)/1024);
 	printf("Memory map length %u at addr 0x%X\n", mmap_length, mmap);
 
@@ -43,7 +45,6 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	mm_init_page_allocator(mmap_length, mmap);
 	mm_init_stack();
 
-	process_control_block_t *pcb = current_process_control_block();
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
 		pcb->mm_info->heap_start,
 		pcb->mm_info->heap_end,

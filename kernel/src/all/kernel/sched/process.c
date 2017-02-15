@@ -12,5 +12,5 @@ void sched_init_process_control_block(void) {
 		.tid = 1,
 		.mm_info = &init_mm_info
 	};
-	*current_process_control_block() = init_pcb;
+	*current_process_control_block_ptr() = &init_pcb;
 }
