@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <test/mm.h>
+#include <test/sched.h>
 
 #include <kernel/tty.h>
 #include <kernel/panic.h>
@@ -45,6 +46,8 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	mm_init_page_allocator(mmap_length, mmap);
 	mm_init_stack();
 
+	sched_setup_tick();
+
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
 		pcb->mm_info->heap_start,
 		pcb->mm_info->heap_end,
@@ -60,4 +63,14 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 		pcb->mm_info->heap_end,
 		(pcb->mm_info->heap_end - pcb->mm_info->heap_start)
 		);
+
+	test_sched_endless_threads_basic();
+
+	//TODO have a real idle task
+	// waste our time quantum from now on
+	printf("Main kernel thread will waste its time from now on.");
+	asm (
+		"1: hlt;"
+		"jmp 1b;"
+	);
 }

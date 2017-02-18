@@ -84,3 +84,16 @@ itr_set_handler:
 	pop %eax
 	pop %ebp
 	ret
+
+.global itr_enable
+.type itr_enable, @function
+itr_enable:
+	sti
+	ret
+
+.global itr_disable
+.type itr_disable, @function
+itr_disable:
+	cli
+	ret
+	

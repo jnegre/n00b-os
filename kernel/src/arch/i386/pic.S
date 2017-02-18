@@ -16,7 +16,7 @@ pic_init:
 	push %eax
 
 	# Disable all IRQs
-	call pic_disable
+	call pic_disable_all
 	# starts the initialization sequence (in cascade mode)
 	mov $0x11, %al
 	out %al, $MASTER_COMMAND
@@ -39,6 +39,9 @@ pic_init:
 	# ICW4: set as Slave in 8086/88 Mode
 	mov $0b001, %al
 	out %al, $SLAVE_DATA
+
+	# Disable all IRQs (again)
+	call pic_disable_all
 
 	pop %eax
 	ret
@@ -77,9 +80,9 @@ pic_send_eoi:
 #
 # Disable all IRQs
 #
-.global pic_disable
-.type pic_disable, @function
-pic_disable:
+.global pic_disable_all
+.type pic_disable_all, @function
+pic_disable_all:
 	push %eax
 
 	mov $0xFF, %al
@@ -87,4 +90,40 @@ pic_disable:
 	out %al, $SLAVE_DATA
 
 	pop %eax
+	ret
+
+#
+# Enables an IRQ
+# [BP+8] IRQ (long)
+#
+.global pic_enable
+.type pic_enable, @function
+pic_enable:
+	push %ebp
+	mov %esp, %ebp
+	push %eax
+	push %ebx
+	push %edx;
+
+
+	mov 8(%ebp), %ebx
+	cmpb $8, 8(%ebp)
+	jl 1f # if IRQ < 8
+	# PIC 2
+	mov $SLAVE_DATA, %dx
+	sub $8, %ebx
+	jmp 2f
+1:
+	# PIC 1
+	mov $MASTER_DATA, %dx
+2:
+	# get current mask
+	in %dx, %al
+	btr %bx, %ax
+	out %al, %dx
+
+	pop %edx
+	pop %ebx
+	pop %eax
+	pop %ebp
 	ret

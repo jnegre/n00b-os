@@ -16,4 +16,14 @@
  */
 void itr_set_handler(uint8_t itr, uint8_t type, uint16_t cs, void* handler);
 
+/*
+ * Enables interrupt
+ */
+void itr_enable(void);
+
+/*
+ * Disables interrupt
+ */
+void itr_disable(void);
+
 #endif

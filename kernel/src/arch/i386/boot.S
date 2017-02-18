@@ -71,6 +71,7 @@ gdt:
 	gdt_entry limit=0, flags=0, access=0 # Null descriptor
 	gdt_entry 0b10011010 # Code segment, kernel
 	gdt_entry 0b10010010 # Data segment, kernel
+.global gdt_info
 gdt_info:
 	.word gdt_info - gdt - 1
 	.long gdt
