@@ -14,6 +14,6 @@ static void thread(void* integer) {
 void test_sched_endless_threads_yield(void) {
 	printf("Lauching 5 test threads\n");
 	for(int i=1; i<=5; i++) {
-		sched_new_thread(&thread, (void*)i);
+		sched_new_thread(&thread, (void*)i, PRIORITY_NORMAL);
 	}
 }

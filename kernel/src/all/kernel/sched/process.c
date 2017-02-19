@@ -14,6 +14,7 @@ void sched_init_process_control_block(void) {
 	static process_control_block_t init_pcb = {
 		.tgid = 1,
 		.tid = 1,
+		.priority = PRIORITY_NORMAL,
 		.mm_info = &init_mm_info
 	};
 	*current_process_control_block_ptr() = &init_pcb;

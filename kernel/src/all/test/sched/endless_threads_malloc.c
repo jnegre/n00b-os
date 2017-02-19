@@ -17,8 +17,8 @@ static void thread(void* integer) {
 
 void test_sched_endless_threads_malloc(void) {
 	printf("Lauching 4 test threads\n");
-	sched_new_thread(&thread, (void*)1);
-	sched_new_thread(&thread, (void*)2);
-	sched_new_thread(&thread, (void*)3);
-	sched_new_thread(&thread, (void*)4);
+	sched_new_thread(&thread, (void*)1, PRIORITY_NORMAL);
+	sched_new_thread(&thread, (void*)2, PRIORITY_NORMAL);
+	sched_new_thread(&thread, (void*)3, PRIORITY_NORMAL);
+	sched_new_thread(&thread, (void*)4, PRIORITY_NORMAL);
 }

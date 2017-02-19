@@ -36,10 +36,13 @@
 irq0_handler:
 	save_task
 
-	// acknowledge the irq
+	# acknowledge the irq
 	pushl $0
 	call pic_send_eoi
 	popl %eax
+
+	# update the counters
+	call sched_ms_tick
 
 	switch_task
 
@@ -49,7 +52,7 @@ irq0_handler:
 int50_handler:
 	save_task
 
-	// park the current task
+	# park the current task
 	pushl %eax
 	call sched_park_task
 	popl %eax

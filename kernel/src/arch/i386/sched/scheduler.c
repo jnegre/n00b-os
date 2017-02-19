@@ -27,6 +27,7 @@ typedef struct machine_state {
 
 typedef struct task {
 	struct task* next;
+	uint32_t remaining_ticks;
 	process_control_block_t* pcb;
 	machine_state_t* ms;
 } task_t;
@@ -41,15 +42,23 @@ static task_t* current_task;
  * All parameters are used in (current task) and out (next task).
  */
 uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
-	// update current task
-	current_task->ms->ss = ss;
-	current_task->ms->esp = esp;
-	// switch to the next (valid) task
-	current_task = current_task->next;
-	// set out values
-	ss = current_task->ms->ss;
-	esp = current_task->ms->esp;
+	if(current_task->remaining_ticks == 0) {
+		// update current task
+		current_task->ms->ss = ss;
+		current_task->ms->esp = esp;
+		current_task->remaining_ticks = current_task->pcb->priority;
+		// switch to the next (valid) task
+		current_task = current_task->next;
+		// set out values
+		ss = current_task->ms->ss;
+		esp = current_task->ms->esp;
+	}
 	return current_task->pcb->mm_info->gdt_info;
+}
+
+/* Called every 1 ms */
+void sched_ms_tick(void) {
+	current_task->remaining_ticks --;
 }
 
 static void put_in_schedule_ring(task_t* task) {
@@ -60,8 +69,10 @@ static void put_in_schedule_ring(task_t* task) {
 }
 
 void sched_park_task(uint32_t ms) {
-	// Note: the next task will only get what's left of our time quantum, not a full one
-	if(ms != 0) {
+	// Note: the next task will only get what's left of the current ms, not a full one
+	if(ms == 0) {
+		current_task->remaining_ticks = 0;
+	} else {
 		panic("Sleep not implemented yet.");
 	}
 }
@@ -70,7 +81,7 @@ void sched_yield(void) {
 	sched_sleep(0);
 }
 
-void sched_new_thread(void (*run)(void*), void* data) {
+void sched_new_thread(void (*run)(void*), void* data, enum thread_priority priority) {
 	uint32_t tid = nexttid();
 
 	//create the new pcb
@@ -79,6 +90,7 @@ void sched_new_thread(void (*run)(void*), void* data) {
 		panic("Failed to allocate new pcb");
 	}
 	new_pcb->tid = tid;
+	new_pcb->priority = priority;
 	//we have the same mm_info & tgid than the current one
 	process_control_block_t* current_pcb = current_process_control_block();
 	new_pcb->tgid = current_pcb->tgid;
@@ -140,6 +152,7 @@ void sched_new_thread(void (*run)(void*), void* data) {
 	if(new_task == NULL) {
 		panic("Failed to allocate new task");
 	}
+	new_task->remaining_ticks = priority;
 	new_task->ms = ms;
 	new_task->pcb = new_pcb;
 
@@ -154,6 +167,7 @@ void sched_setup_tick(void) {
 		.next = &first_task
 	};
 	first_task.pcb = current_process_control_block();
+	first_task.remaining_ticks = first_task.pcb->priority;
 
 	current_task = &first_task;
 

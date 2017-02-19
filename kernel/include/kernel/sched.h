@@ -3,9 +3,17 @@
 
 #include <kernel/mm.h>
 
+enum thread_priority {
+	// relative weight of each time quantum
+	PRIORITY_LOW=5,
+	PRIORITY_NORMAL=10,
+	PRIORITY_HIGH=20
+};
+
 typedef struct process_control_block {
 	uint32_t tgid; // thread group id aka pid
 	uint32_t tid; // thread id
+	enum thread_priority priority;
 	mm_info_t* mm_info;
 } process_control_block_t;
 
@@ -19,7 +27,7 @@ process_control_block_t* current_process_control_block(void);
  * The function "run"" should never return, or bad things will happen.
  */
  //TODO function should be able to finish + exit code
-void sched_new_thread(void (*run)(void*), void* data);
+void sched_new_thread(void (*run)(void*), void* data, enum thread_priority priority);
 
 /*
  * Puts the current thread to sleep for a specific duration.

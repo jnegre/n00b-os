@@ -57,14 +57,16 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	//let's test the mm
 	//test_mm_page_allocator();
 	//and malloc
-	test_malloc();
+	//test_malloc();
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
 		pcb->mm_info->heap_start,
 		pcb->mm_info->heap_end,
 		(pcb->mm_info->heap_end - pcb->mm_info->heap_start)
 		);
 
-	test_sched_endless_threads_malloc();
+	//test_sched_endless_threads_malloc();
+	//test_sched_endless_threads_basic();
+	test_sched_endless_threads_yield();
 
 	//TODO have a real idle task
 	// waste our time quantum from now on

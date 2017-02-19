@@ -3,15 +3,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void thread(void* integer) {
-	uint32_t i = (uint32_t)integer;
+static void thread(void* ch) {
+	char c = (char)ch;
+	int i = 0;
 	while(true) {
-		printf("[%u]", i);
+		if(++i == 100000) {
+			i = 0;
+			printf("%c", c);
+		}
 	}
 }
 
 void test_sched_endless_threads_basic(void) {
-	printf("Lauching 2 test threads\n");
-	sched_new_thread(&thread, (void*)1);
-	sched_new_thread(&thread, (void*)2);
+	printf("Lauching 3 test threads\n");
+	sched_new_thread(&thread, (void*)'L', PRIORITY_LOW);
+	sched_new_thread(&thread, (void*)'N', PRIORITY_NORMAL);
+	sched_new_thread(&thread, (void*)'H', PRIORITY_HIGH);
 }
