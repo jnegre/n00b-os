@@ -39,7 +39,7 @@ static task_t* current_task;
  * Returns the next gdt_info.
  * All parameters are used in (current task) and out (next task).
  */
-uintptr_t irq0_C(uint16_t ss, uint32_t esp) {
+uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
 	// update current task
 	current_task->ms->ss = ss;
 	current_task->ms->esp = esp;

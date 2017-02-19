@@ -22,7 +22,7 @@ Vector | Type | Handled? | Description
 19 | Fault | Y | SIMD Floating-Point Exception
 20 | Fault | N | Virtualization Exception
 21-31 | | N | Intel reserved
-32 | IRQ | N | 0 - Programmable Interrupt Timer
+32 | IRQ | Y | 0 - Programmable Interrupt Timer
 33 | IRQ | N | 1 - Keyboard
 34 | IRQ | N | 2 - Cascade (used internally, never raised)
 35 | IRQ | N | 3 - COM2

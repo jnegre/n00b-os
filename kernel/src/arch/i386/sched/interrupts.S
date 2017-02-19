@@ -1,22 +1,15 @@
-# handles irq0, switches to a new task
-.global irq0
-.type irq0, @function
-
-irq0:
+.macro save_task
 	pusha
 	push %ds
 	push %es
 	push %fs
 	push %gs
+.endm
 
-	// acknowledge the irq
-	pushl $0
-	call pic_send_eoi
-	popl %eax
-
+.macro switch_task
 	push %esp
 	push %ss
-	call irq0_C
+	call sched_switch_next_task
 	// the 2 parameters now contain the new values
 	pop %ebx
 	pop %ecx
@@ -34,3 +27,19 @@ irq0:
 	pop %ds
 	popa
 	iret
+.endm
+
+
+# handles irq0, switches to a new task
+.global irq0
+.type irq0, @function
+
+irq0:
+	save_task
+
+	// acknowledge the irq
+	pushl $0
+	call pic_send_eoi
+	popl %eax
+
+	switch_task
