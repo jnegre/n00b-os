@@ -9,6 +9,7 @@
 
 #include <kernel/mm.h>
 #include <kernel/sched.h>
+#include <kernel/sync.h>
 #include <kernel/panic.h>
 
 #define CANARY 0xCAFEBABE
@@ -66,6 +67,7 @@ void* malloc( size_t size ) {
 	uintptr_t best_ptr = 0;
 	chunck_marker_start_t* last_marker = NULL;
 	size_t best_size;
+	semaphore_acquire(&mm_info->heap_semaphore);
 	uintptr_t ptr = mm_info->heap_start;
 	while(ptr < mm_info->heap_end) {
 		last_marker = (chunck_marker_start_t*)ptr;
@@ -93,6 +95,7 @@ void* malloc( size_t size ) {
 		}
 		// use it
 		mark_chunck(best_ptr, useable_size, false);
+		semaphore_release(&mm_info->heap_semaphore);
 		return (void*)(best_ptr + start_size);
 	} else {
 		// need to allocate some more memory
@@ -130,6 +133,7 @@ void* malloc( size_t size ) {
 			useable_size = free_size - start_size - end_size;
 		}
 		mark_chunck(insertion_point, useable_size, false);
+		semaphore_release(&mm_info->heap_semaphore);
 		return (void*)(insertion_point + start_size);
 	}
 }
@@ -138,6 +142,9 @@ void free( void* ptr ) {
 	if(ptr == NULL) {
 		return;
 	}
+
+	mm_info_t* mm_info = current_process_control_block()->mm_info;
+
 	const size_t start_size = aligned_size(sizeof(chunck_marker_start_t));
 	const size_t end_size = aligned_size(sizeof(chunck_marker_end_t));
 
@@ -146,11 +153,10 @@ void free( void* ptr ) {
 	if(end->canary != CANARY) {
 		panic("Dead heap canary");
 	}
+	semaphore_acquire(&mm_info->heap_semaphore);
 	start->free = true;
 	
-	// merge with chuncks before/after
-	mm_info_t* mm_info = current_process_control_block()->mm_info;
-	
+	// merge with chuncks before/after	
 	chunck_marker_start_t* start_after = (chunck_marker_start_t*)(ptr + start->size + end_size);
 	if((uintptr_t)start_after < mm_info->heap_end && start_after->free) {
 		mark_chunck((uintptr_t)start, start->size + start_after->size + start_size + end_size, true);
@@ -161,10 +167,11 @@ void free( void* ptr ) {
 		if(end_before->canary != CANARY) {
 			panic("Dead heap canary");
 		}
-chunck_marker_start_t* start_before = (chunck_marker_start_t*)(ptr - start_size - end_size - end_before->size - start_size);
+		chunck_marker_start_t* start_before = (chunck_marker_start_t*)(ptr - start_size - end_size - end_before->size - start_size);
 		if(start_before->free) {
 			mark_chunck((uintptr_t)start_before, start->size + start_before->size + start_size + end_size, true);
 		}
 	}
 
+	semaphore_release(&mm_info->heap_semaphore);
 }

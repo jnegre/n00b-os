@@ -1,4 +1,5 @@
 #include <kernel/sched.h>
+#include <kernel/sync.h>
 #include <kernel/mm.h>
 
 void sched_init_process_control_block(void) {
@@ -6,6 +7,7 @@ void sched_init_process_control_block(void) {
 	extern int gdt_info;
 	static mm_info_t init_mm_info = {
 		.gdt_info = (uintptr_t)&gdt_info,
+		.heap_semaphore = SEMAPHORE_INIT,
 		.heap_start = (uintptr_t)&kernel_end,
 		.heap_end = (uintptr_t)&kernel_end
 	};

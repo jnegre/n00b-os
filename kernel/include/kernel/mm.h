@@ -2,12 +2,14 @@
 #define _KERNEL_MM_H
 #include <stdint.h>
 #include <stdbool.h>
+#include <kernel/sync.h>
 #include <arch/x86/multiboot.h> //FIXME remove this dependency
 
 #define MM_PAGE_SIZE 4096
 
 typedef struct mm_info {
 	uintptr_t gdt_info;
+	semaphore_t heap_semaphore;
 	uintptr_t heap_start;
 	uintptr_t heap_end;
 } mm_info_t;

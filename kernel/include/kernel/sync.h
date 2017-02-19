@@ -4,25 +4,23 @@
 #include <stdint.h>
 
 /*
- * Spin lock
+ * Semaphore
  */
-
-typedef struct spinlock {
+typedef struct semaphore {
 	volatile uint32_t lock;
-} spinlock_t;
+} semaphore_t;
 
-#define SPIN_LOCK_INIT \
+#define SEMAPHORE_INIT \
 	{ \
-		.lock = 0 \
+		.lock = 0, \
 	}
 
-void spin_lock(spinlock_t* lock);
-void spin_unlock(spinlock_t* lock);
+void semaphore_acquire(semaphore_t* semaphore);
+void semaphore_release(semaphore_t* semaphore);
 
 /*
  * Reentrant mutex
  */
-
 typedef struct mutex {
 	volatile uint32_t lock;
 	uint16_t level;

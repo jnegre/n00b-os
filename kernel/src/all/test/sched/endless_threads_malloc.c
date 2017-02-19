@@ -3,32 +3,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// thread 1
-static void thread1(void* dnu) {
+static void thread(void* integer) {
+	uint32_t i = (uint32_t)integer;
 	while(true) {
-		//printf("1");
+		printf("%u", i);
 		int *p = malloc(sizeof(int));
 		assert_not_null("malloc returned non NULL", (uintptr_t)p);
-		*p = 1;
-		assert_uint("Thread malloc", 1, p[0]);
-		free(p);
-	}
-}
-// thread 2
-static void thread2(void* dnu) {
-	while(true) {
-		//printf("2");
-		int *p = malloc(sizeof(int));
-		assert_not_null("malloc returned non NULL", (uintptr_t)p);
-		*p = 2;
-		assert_uint("Thread malloc", 2, p[0]);
+		*p = i;
+		assert_uint("Thread malloc", i, p[0]);
 		free(p);
 	}
 }
 
-// FIXME causes Page Faults
 void test_sched_endless_threads_malloc(void) {
-	printf("Lauching 2 test threads\n");
-	sched_new_thread(&thread1, NULL);
-	sched_new_thread(&thread2, NULL);
+	printf("Lauching 4 test threads\n");
+	sched_new_thread(&thread, (void*)1);
+	sched_new_thread(&thread, (void*)2);
+	sched_new_thread(&thread, (void*)3);
+	sched_new_thread(&thread, (void*)4);
 }
