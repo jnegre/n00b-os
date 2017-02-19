@@ -38,3 +38,5 @@ Vector | Type | Handled? | Description
 45 | IRQ | N | 13 - FPU
 46 | IRQ | N | 14 - Primary ATA Hard Disk 
 47 | IRQ | N | 15 - Secondary ATA Hard Disk
+...|||
+50 | Soft | Y | sleep/yield

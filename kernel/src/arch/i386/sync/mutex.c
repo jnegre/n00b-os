@@ -9,8 +9,7 @@ void mutex_acquire(mutex_t* mutex) {
 		"	je got_lock;"
 		"	cmp $0, %0;" // is the lock free?
 		"	je get_lock;"
-		"	pause;"
-		//TODO add a call to sched_yield() when it exists
+		"	call sched_yield;"
 		"	jmp spin_lock;"
 		"get_lock:"
 		"	xchg %%eax, %0;" // try to get lock

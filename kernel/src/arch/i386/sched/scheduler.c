@@ -7,7 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void irq0(void); // defined in irq0.S
+void irq0_handler(void); // defined in interrupts.S
+void int50_handler(void); // defined in interrupts.S
 
 static uint32_t nexttid(void) {
 	//FIXME quick'n'dirty
@@ -56,6 +57,17 @@ static void put_in_schedule_ring(task_t* task) {
 	task->next = current_task->next;
 	current_task->next = task;
 	itr_enable();
+}
+
+void sched_park_task(uint32_t ms) {
+	// Note: the next task will only get what's left of our time quantum, not a full one
+	if(ms != 0) {
+		panic("Sleep not implemented yet.");
+	}
+}
+
+void sched_yield(void) {
+	sched_sleep(0);
 }
 
 void sched_new_thread(void (*run)(void*), void* data) {
@@ -145,8 +157,10 @@ void sched_setup_tick(void) {
 
 	current_task = &first_task;
 
+	printf("Setting int 50 handler\n");
+	itr_set_handler(50, 0x8E, 8, &int50_handler); //TODO check it's the correct type
 	printf("Setting IRQ0 handler\n");
-	itr_set_handler(32, 0x8E, 8, &irq0); //TODO check it's the correct type
+	itr_set_handler(32, 0x8E, 8, &irq0_handler); //TODO check it's the correct type
 	printf("Programming PIC\n");
 	pit_configure(CHANNEL_0, SQUARE_WAVE_GENERATOR, PIT_FREQUENCY_HZ/1000); // -> 1000 times per second
 	printf("Enabling IRQ 0\n");

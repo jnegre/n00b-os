@@ -21,6 +21,18 @@ process_control_block_t* current_process_control_block(void);
  //TODO function should be able to finish + exit code
 void sched_new_thread(void (*run)(void*), void* data);
 
+/*
+ * Puts the current thread to sleep for a specific duration.
+ * ms: the duration in ms
+ */
+void sched_sleep(uint32_t ms);
+
+/*
+ * Provides a hint to the implementation to reschedule the execution of threads,
+ * allowing other threads to run.
+ */
+void sched_yield(void);
+
 void sched_init_process_control_block(void);
 void sched_setup_tick(void); //FIXME rename
 

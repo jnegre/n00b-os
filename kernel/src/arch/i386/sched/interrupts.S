@@ -31,15 +31,27 @@
 
 
 # handles irq0, switches to a new task
-.global irq0
-.type irq0, @function
-
-irq0:
+.global irq0_handler
+.type irq0_handler, @function
+irq0_handler:
 	save_task
 
 	// acknowledge the irq
 	pushl $0
 	call pic_send_eoi
+	popl %eax
+
+	switch_task
+
+# handles int 50, sleeps/yields the current task
+.global int50_handler
+.type int50_handler, @function
+int50_handler:
+	save_task
+
+	// park the current task
+	pushl %eax
+	call sched_park_task
 	popl %eax
 
 	switch_task
