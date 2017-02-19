@@ -30,6 +30,8 @@ typedef struct task {
 	machine_state_t* ms;
 } task_t;
 
+
+
 //FIXME not SMP friendly. Would current_process_control_block() work in user mode here?
 static task_t* current_task;
 
@@ -56,7 +58,7 @@ static void put_in_schedule_ring(task_t* task) {
 	itr_enable();
 }
 
-void sched_new_thread(void (*run)(void)) {
+void sched_new_thread(void (*run)(void*), void* data) {
 	uint32_t tid = nexttid();
 
 	//create the new pcb
@@ -95,6 +97,8 @@ void sched_new_thread(void (*run)(void)) {
 	uint32_t ds = 0x10;
 	uintptr_t sp = base | 0x3FF0;
 
+	*(uint32_t*)(sp-=4) = (uint32_t)data;
+	*(uint32_t*)(sp-=4) = 0xBAD1BAD1; // address that will be used by the ret at the end of the call
 	*(uint32_t*)(sp-=4) = 0x00200286; //EFlags
 	*(uint32_t*)(sp-=4) = cs; //CS
 	*(uint32_t*)(sp-=4) = (uint32_t)run; //EIP
@@ -110,8 +114,6 @@ void sched_new_thread(void (*run)(void)) {
 	*(uint32_t*)(sp-=4) = ds; // ES
 	*(uint32_t*)(sp-=4) = ds; // FS
 	*(uint32_t*)(sp-=4) = ds; // GS
-	//*(uint32_t*)(sp-=4) = 0; // dummy param esp
-	//*(uint32_t*)(sp-=4) = 0; // dummy param ss
 
 	//create the new machine_state
 	machine_state_t* ms = malloc(sizeof(machine_state_t));

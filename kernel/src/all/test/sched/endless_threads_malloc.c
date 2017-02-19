@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 // thread 1
-static void thread1(void) {
+static void thread1(void* dnu) {
 	while(true) {
 		//printf("1");
 		int *p = malloc(sizeof(int));
@@ -15,7 +15,7 @@ static void thread1(void) {
 	}
 }
 // thread 2
-static void thread2(void) {
+static void thread2(void* dnu) {
 	while(true) {
 		//printf("2");
 		int *p = malloc(sizeof(int));
@@ -29,6 +29,6 @@ static void thread2(void) {
 // FIXME causes Page Faults
 void test_sched_endless_threads_malloc(void) {
 	printf("Lauching 2 test threads\n");
-	sched_new_thread(&thread1);
-	sched_new_thread(&thread2);
+	sched_new_thread(&thread1, NULL);
+	sched_new_thread(&thread2, NULL);
 }

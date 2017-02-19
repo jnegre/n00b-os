@@ -14,11 +14,12 @@ process_control_block_t* current_process_control_block(void);
 
 /*
  * Creates a new thread for the process.
+ * run: function to be executed by the new thread.
+ * data: parameter for the function "run"
  * The function "run"" should never return, or bad things will happen.
  */
- //TODO have a parameter for "run""
  //TODO function should be able to finish + exit code
-void sched_new_thread(void (*run)(void));
+void sched_new_thread(void (*run)(void*), void* data);
 
 void sched_init_process_control_block(void);
 void sched_setup_tick(void); //FIXME rename

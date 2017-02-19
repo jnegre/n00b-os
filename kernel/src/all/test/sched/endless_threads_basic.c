@@ -3,23 +3,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// thread 1
-static void thread1(void) {
+static void thread(void* integer) {
+	uint32_t i = (uint32_t)integer;
 	while(true) {
-		//printf("1");
-		asm("pause");
-	}
-}
-// thread 2
-static void thread2(void) {
-	while(true) {
-		//printf("2");
-		asm("pause");
+		printf("[%u]", i);
+		//asm("pause");
 	}
 }
 
 void test_sched_endless_threads_basic(void) {
 	printf("Lauching 2 test threads\n");
-	sched_new_thread(&thread1);
-	sched_new_thread(&thread2);
+	sched_new_thread(&thread, (void*)1);
+	sched_new_thread(&thread, (void*)2);
 }
