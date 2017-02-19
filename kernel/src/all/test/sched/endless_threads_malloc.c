@@ -6,7 +6,7 @@
 static void thread(void* integer) {
 	uint32_t i = (uint32_t)integer;
 	while(true) {
-		printf("%u", i);
+		//printf("%u", i);
 		int *p = malloc(sizeof(int));
 		assert_not_null("malloc returned non NULL", (uintptr_t)p);
 		*p = i;

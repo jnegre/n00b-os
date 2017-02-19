@@ -53,7 +53,6 @@ static void mark_chunck(const uintptr_t insertion_point, const size_t useable_si
 	end->canary = CANARY;
 }
 
-//FIXME must be made thread-safe
 void* malloc( size_t size ) {
 	if(size == 0) {
 		return NULL;
