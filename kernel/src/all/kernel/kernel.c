@@ -66,11 +66,12 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 
 	//test_sched_endless_threads_malloc();
 	//test_sched_endless_threads_basic();
-	test_sched_endless_threads_yield();
+	//test_sched_endless_threads_yield();
+	test_sched_endless_threads_sleep();
 
 	//TODO have a real idle task
 	// waste our time quantum from now on
-	printf("Main kernel thread will waste its time from now on.");
+	printf("Main kernel thread will waste its time from now on.\n");
 	asm (
 		"1: hlt;"
 		"jmp 1b;"

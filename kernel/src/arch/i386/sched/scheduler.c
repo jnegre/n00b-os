@@ -6,6 +6,7 @@
 #include <arch/i386/interrupt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 void irq0_handler(void); // defined in interrupts.S
 void int50_handler(void); // defined in interrupts.S
@@ -27,6 +28,7 @@ typedef struct machine_state {
 
 typedef struct task {
 	struct task* next;
+	struct task* previous;
 	uint32_t remaining_ticks;
 	process_control_block_t* pcb;
 	machine_state_t* ms;
@@ -35,45 +37,127 @@ typedef struct task {
 
 
 //FIXME not SMP friendly. Would current_process_control_block() work in user mode here?
+/* The task currently running. Changed at the last second in sched_switch_next_task. If NULL, we're in idle. */
 static task_t* current_task;
+static bool switching;
+/* The task we're switching to. If NULL, we're going in idle mode. */
+static task_t* switched_task;
+/* Pointed list of sleeping tasks */
+static task_t* sleeping_task;
+/* The idle task, does nothing but hlt */
+static task_t* idle_task; //TODO give it PID 0
 
 /* 
  * Returns the next gdt_info.
  * All parameters are used in (current task) and out (next task).
  */
 uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
-	if(current_task->remaining_ticks == 0) {
-		// update current task
-		current_task->ms->ss = ss;
-		current_task->ms->esp = esp;
-		current_task->remaining_ticks = current_task->pcb->priority;
-		// switch to the next (valid) task
-		current_task = current_task->next;
-		// set out values
-		ss = current_task->ms->ss;
-		esp = current_task->ms->esp;
+	if(switching) {
+		if(switched_task != NULL) {
+			// update current task
+			current_task->ms->ss = ss;
+			current_task->ms->esp = esp;
+			// switch to the next (valid) task
+			current_task = switched_task;
+			current_task->remaining_ticks = current_task->pcb->priority;
+			// set out values
+			ss = current_task->ms->ss;
+			esp = current_task->ms->esp;
+		} else {
+			panic("Calling the idle task not yet implemented");
+		}
 	}
 	return current_task->pcb->mm_info->gdt_info;
 }
 
-/* Called every 1 ms */
-void sched_ms_tick(void) {
-	current_task->remaining_ticks --;
+/*
+ * Do not call when interrupts are enabled.
+ */
+static void put_in_schedule_ring(task_t* task) {
+	if(current_task != NULL) {
+		// TODO insert BEFORE current_task instead of after
+		task->next = current_task->next;
+		task->previous = current_task;
+		task->next->previous = task;
+		current_task->next = task;
+	} else {
+		// FIXME 
+		panic("not implemented: do not change current_task or bad things will happen");
+		task->next = task;
+		task->previous = task;
+		current_task = task;
+	}
 }
 
-static void put_in_schedule_ring(task_t* task) {
-	itr_disable();
-	task->next = current_task->next;
-	current_task->next = task;
-	itr_enable();
+/* Called every 1 ms */
+void sched_ms_tick(void) {
+	// wake up sleeping tasks
+	if(sleeping_task != NULL) {
+		-- sleeping_task->remaining_ticks;
+		while(sleeping_task != NULL && sleeping_task->remaining_ticks == 0) {
+			task_t* next_sleeping = sleeping_task->next;
+			put_in_schedule_ring(sleeping_task); //FIXME bug if currenlty idle
+			sleeping_task = next_sleeping;
+		}
+	}
+	if(-- current_task->remaining_ticks == 0) {
+		switched_task = current_task->next;
+		switching = true;
+	} else {
+		switching = false;
+	}
+}
+
+
+/* Removes the current task from the schedule ring and sets switched_task.
+ * Do not call when interrupts are enabled.
+ */
+static task_t* remove_from_schedule_ring() {
+	task_t* removed = current_task;
+	if(current_task == current_task->next) {
+		// home alone
+		switched_task = NULL;
+	} else {
+		//TODO what a mess
+		removed->previous->next = removed->next;
+		removed->next->previous = removed->previous;
+		switched_task = removed->next;
+	}
+	return removed;
 }
 
 void sched_park_task(uint32_t ms) {
+	switching = true;
 	// Note: the next task will only get what's left of the current ms, not a full one
 	if(ms == 0) {
-		current_task->remaining_ticks = 0;
+		switched_task = current_task->next;
 	} else {
-		panic("Sleep not implemented yet.");
+		task_t* going_to_bed = remove_from_schedule_ring();
+		if(sleeping_task == NULL) {
+			going_to_bed->next = NULL;
+			going_to_bed->remaining_ticks = ms;
+			sleeping_task = going_to_bed;
+		} else {
+			uint32_t remaining = ms;
+			task_t* previous = NULL;
+			task_t* t;
+			for(t = sleeping_task; t!=NULL && t->remaining_ticks < remaining; t = t->next) {
+				remaining -= t->remaining_ticks;
+				previous = t;
+			}
+			// insert between previous and t
+			going_to_bed->remaining_ticks = remaining;
+			going_to_bed->next = t;
+			if(previous != NULL) {
+				previous->next = going_to_bed;
+			} else {
+				sleeping_task = going_to_bed;
+			}
+			// remove remaining ms from the next sleeping task
+			if(t!=NULL) {
+				t->remaining_ticks -= remaining;
+			}
+		}
 	}
 }
 
@@ -81,7 +165,7 @@ void sched_yield(void) {
 	sched_sleep(0);
 }
 
-void sched_new_thread(void (*run)(void*), void* data, enum thread_priority priority) {
+static task_t* create_new_task(void (*run)(void*), void* data, enum thread_priority priority) {
 	uint32_t tid = nexttid();
 
 	//create the new pcb
@@ -97,7 +181,7 @@ void sched_new_thread(void (*run)(void*), void* data, enum thread_priority prior
 	new_pcb->mm_info = current_pcb->mm_info;
 
 	// create a new stack
-	// FIXME but not like this
+	// TODO but not like this
 	uintptr_t stack_top = 0xFFBFC000 - (tid-2) * 4*4096;
 	for(int i=1; i<=4; i++) {
 		uintptr_t page = mm_alloc_physical_page(true);
@@ -155,12 +239,28 @@ void sched_new_thread(void (*run)(void*), void* data, enum thread_priority prior
 	new_task->remaining_ticks = priority;
 	new_task->ms = ms;
 	new_task->pcb = new_pcb;
+	return new_task;
+}
 
-	put_in_schedule_ring(new_task);
+void sched_new_thread(void (*run)(void*), void* data, enum thread_priority priority) {
+	itr_disable();
+	put_in_schedule_ring(create_new_task(run, data, priority));
+	itr_enable();
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+static void idle(void* not_used) {
+	#pragma GCC diagnostic pop
+	asm("hlt;");
 }
 
 void sched_setup_tick(void) {
+	// setup idle task
+	idle_task = create_new_task(idle, NULL, PRIORITY_HIGH);
+
 	printf("Setup 1st task\n");
+	// TODO malloc instead of static data
 	static machine_state_t ms = {0,0};
 	static task_t first_task = {
 		.ms = &ms,
