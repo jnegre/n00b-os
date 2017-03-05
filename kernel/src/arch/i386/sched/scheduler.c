@@ -53,10 +53,17 @@ static task_t* idle_task; //TODO give it PID 0
  */
 uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
 	if(switching) {
-		if(switched_task != NULL) {
+		if(current_task != NULL) {
 			// update current task
 			current_task->ms->ss = ss;
 			current_task->ms->esp = esp;
+		} else {
+			// update idle task
+			idle_task->ms->ss = ss;
+			idle_task->ms->esp = esp;
+		}
+
+		if(switched_task != NULL) {
 			// switch to the next (valid) task
 			current_task = switched_task;
 			current_task->remaining_ticks = current_task->pcb->priority;
@@ -64,10 +71,13 @@ uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
 			ss = current_task->ms->ss;
 			esp = current_task->ms->esp;
 		} else {
-			panic("Calling the idle task not yet implemented");
+			// idle task
+			current_task = NULL;
+			ss = idle_task->ms->ss;
+			esp = idle_task->ms->esp;
 		}
 	}
-	return current_task->pcb->mm_info->gdt_info;
+	return (current_task!=NULL ? current_task : idle_task)->pcb->mm_info->gdt_info;
 }
 
 /*
@@ -80,12 +90,16 @@ static void put_in_schedule_ring(task_t* task) {
 		task->previous = current_task;
 		task->next->previous = task;
 		current_task->next = task;
+	} else if(switched_task != NULL) {
+		task->next = switched_task->next;
+		task->previous = switched_task;
+		task->next->previous = task;
+		switched_task->next = task;
 	} else {
-		// FIXME 
-		panic("not implemented: do not change current_task or bad things will happen");
 		task->next = task;
 		task->previous = task;
-		current_task = task;
+		switched_task = task;
+		switching = true;
 	}
 }
 
@@ -96,15 +110,17 @@ void sched_ms_tick(void) {
 		-- sleeping_task->remaining_ticks;
 		while(sleeping_task != NULL && sleeping_task->remaining_ticks == 0) {
 			task_t* next_sleeping = sleeping_task->next;
-			put_in_schedule_ring(sleeping_task); //FIXME bug if currenlty idle
+			put_in_schedule_ring(sleeping_task);
 			sleeping_task = next_sleeping;
 		}
 	}
-	if(-- current_task->remaining_ticks == 0) {
-		switched_task = current_task->next;
-		switching = true;
-	} else {
-		switching = false;
+	if(current_task != NULL) {
+		if(-- current_task->remaining_ticks == 0) {
+			switched_task = current_task->next;
+			switching = true;
+		} else {
+			switching = false;
+		}
 	}
 }
 
@@ -252,7 +268,9 @@ void sched_new_thread(void (*run)(void*), void* data, enum thread_priority prior
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static void idle(void* not_used) {
 	#pragma GCC diagnostic pop
-	asm("hlt;");
+	while(true) {
+		asm("hlt;");
+	}
 }
 
 void sched_setup_tick(void) {
