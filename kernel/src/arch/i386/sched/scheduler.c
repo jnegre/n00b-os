@@ -10,6 +10,7 @@
 
 void irq0_handler(void); // defined in interrupts.S
 void int50_handler(void); // defined in interrupts.S
+void int51_handler(void); // defined in interrupts.S
 
 static uint32_t nexttid(void) {
 	//FIXME quick'n'dirty
@@ -41,9 +42,11 @@ typedef struct task {
 static task_t* current_task;
 static bool switching;
 /* The task we're switching to. If NULL, we're going in idle mode. */
-static task_t* switched_task;
+static task_t* switched_task = NULL;
 /* Pointed list of sleeping tasks */
-static task_t* sleeping_task;
+static task_t* sleeping_task = NULL;
+/* Tasks to kill asap (next tick) */
+static task_t* doomed_task = NULL;
 /* The idle task, does nothing but hlt */
 static task_t* idle_task; //TODO give it PID 0
 
@@ -221,8 +224,9 @@ static task_t* create_new_task(void (*run)(void*), void* data, enum thread_prior
 	uint32_t ds = 0x10;
 	uintptr_t sp = base | 0x3FF0;
 
-	*(uint32_t*)(sp-=4) = (uint32_t)data;
-	*(uint32_t*)(sp-=4) = 0xBAD1BAD1; // address that will be used by the ret at the end of the call
+	*(uint32_t*)(sp-=4) = (uint32_t)42; // dummy param for sched_exit //TODO not a dummy param
+	*(uint32_t*)(sp-=4) = (uint32_t)data; // param for run
+	*(uint32_t*)(sp-=4) = (uint32_t)&sched_exit; // address that will be used by the ret at the end of the call of run
 	*(uint32_t*)(sp-=4) = 0x00200286; //EFlags
 	*(uint32_t*)(sp-=4) = cs; //CS
 	*(uint32_t*)(sp-=4) = (uint32_t)run; //EIP
@@ -264,6 +268,17 @@ void sched_new_thread(void (*run)(void*), void* data, enum thread_priority prior
 	itr_enable();
 }
 
+void sched_kill_task(int res) {
+	//TODO do something with res
+	//printf("Kill %u with res %u\n",current_process_control_block()->tid , res);
+	switching = true;
+	task_t* dead = remove_from_schedule_ring();
+	dead->next = doomed_task;
+	doomed_task = dead;
+	//FIXME clean-up the task in the next tick
+	//FIXME clean-up the process if it's the last task of its tgid'
+}
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 static void idle(void* not_used) {
@@ -291,6 +306,8 @@ void sched_setup_tick(void) {
 
 	printf("Setting int 50 handler\n");
 	itr_set_handler(50, 0x8E, 8, &int50_handler); //TODO check it's the correct type
+	printf("Setting int 51 handler\n");
+	itr_set_handler(51, 0x8E, 8, &int51_handler); //TODO check it's the correct type
 	printf("Setting IRQ0 handler\n");
 	itr_set_handler(32, 0x8E, 8, &irq0_handler); //TODO check it's the correct type
 	printf("Programming PIC\n");

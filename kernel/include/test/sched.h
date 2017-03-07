@@ -6,4 +6,7 @@ void test_sched_endless_threads_yield(void);
 void test_sched_endless_threads_sleep(void);
 void test_sched_endless_threads_malloc(void);
 
+void test_sched_threads_basic(void);
+void test_sched_threads_exit(void);
+
 #endif

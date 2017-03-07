@@ -2,6 +2,7 @@
 #define _KERNEL_SCHED_H
 
 #include <kernel/mm.h>
+#include <stdnoreturn.h>
 
 enum thread_priority {
 	// relative weight of each time quantum
@@ -26,7 +27,6 @@ process_control_block_t* current_process_control_block(void);
  * data: parameter for the function "run"
  * The function "run"" should never return, or bad things will happen.
  */
- //TODO function should be able to finish + exit code
 void sched_new_thread(void (*run)(void*), void* data, enum thread_priority priority);
 
 /*
@@ -40,6 +40,12 @@ void sched_sleep(uint32_t ms);
  * allowing other threads to run.
  */
 void sched_yield(void);
+
+/*
+ * Exits the current thread.
+ * res: the result value to return
+ */
+noreturn void sched_exit(int res);
 
 void sched_init_process_control_block(void);
 void sched_setup_tick(void); //FIXME rename

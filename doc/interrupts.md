@@ -40,3 +40,4 @@ Vector | Type | Handled? | Description
 47 | IRQ | N | 15 - Secondary ATA Hard Disk
 ...|||
 50 | Soft | Y | sleep/yield
+51 | Soft | Y | exit thread

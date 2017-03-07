@@ -58,3 +58,16 @@ int50_handler:
 	popl %eax
 
 	switch_task
+
+# handles int 51, exits the current task
+.global int51_handler
+.type int51_handler, @function
+int51_handler:
+	save_task
+
+	# kill the current task
+	pushl %eax
+	call sched_kill_task
+	popl %eax
+
+	switch_task
