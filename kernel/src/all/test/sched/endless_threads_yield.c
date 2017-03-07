@@ -2,12 +2,13 @@
 #include <test.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <threads.h>
 
 static void thread(void* integer) {
 	uint32_t i = (uint32_t)integer;
 	while(true) {
 		printf("[%u]", i);
-		sched_yield();
+		thrd_yield();
 	}
 }
 

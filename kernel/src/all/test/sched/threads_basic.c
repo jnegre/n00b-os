@@ -2,6 +2,7 @@
 #include <test.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <threads.h>
 
 static void thread(void* ch) {
 	char* c = (char*)ch;
@@ -12,6 +13,7 @@ static void thread(void* ch) {
 		}
 		printf("%c", *c, dummy);
 	}
+	printf("[RIP %u]", thrd_current());
 }
 
 void test_sched_threads_basic(void) {

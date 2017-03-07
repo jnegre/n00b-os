@@ -3,6 +3,7 @@
 #include <test.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <threads.h>
 
 static void thread(void* integer) {
 	uint32_t i = (uint32_t)integer;
@@ -10,7 +11,7 @@ static void thread(void* integer) {
 		printf("[%u]", i);
 		sched_sleep(i * 1000);
 	}
-	sched_exit(i);
+	thrd_exit(i);
 	panic("After sched_exit()");
 }
 
