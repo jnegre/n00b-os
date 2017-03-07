@@ -1,7 +1,13 @@
+#ifndef _KERNEL_PANIC_H
+#define _KERNEL_PANIC_H
+#include <stdnoreturn.h>
+
 /* Prints a message and stops the computer.
  */
-void panic(const char*) __attribute__((noreturn));
+noreturn void panic(const char*);
 
 /* Stops the computer.
  */
- void halt(void) __attribute__((noreturn));
+noreturn void halt(void);
+
+ #endif
