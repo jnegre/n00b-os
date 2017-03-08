@@ -48,6 +48,6 @@ void sched_yield(void);
 noreturn void sched_exit(int res);
 
 void sched_init_process_control_block(void);
-void sched_setup_tick(void); //FIXME rename
+void sched_init_tasks(void);
 
 #endif

@@ -292,30 +292,35 @@ static noreturn int idle(void* not_used) {
 	}
 }
 
-void sched_setup_tick(void) {
+void sched_init_tasks(void) {
 	// setup idle task
 	idle_task = create_new_task(idle, NULL, PRIORITY_HIGH);
 
-	printf("Setup 1st task\n");
-	// TODO malloc instead of static data
-	static machine_state_t ms = {0,0};
-	static task_t first_task = {
-		.ms = &ms,
-		.next = &first_task
-	};
-	first_task.pcb = current_process_control_block();
-	first_task.remaining_ticks = first_task.pcb->priority;
+	// Setup 1st task
+	task_t* first_task = malloc(sizeof(task_t));
+	if(first_task == NULL) {
+		panic("Failed to allocate 1st task");
+	}
+	machine_state_t* ms = malloc(sizeof(machine_state_t));
+	if(ms == NULL) {
+		panic("Failed to allocate 1st machine state");
+	}
+	first_task->ms = ms;
+	first_task->next = first_task;
+	first_task->pcb = current_process_control_block();
+	first_task->remaining_ticks = first_task->pcb->priority;
 
-	current_task = &first_task;
+	current_task = first_task;
 
-	printf("Setting int 50 handler\n");
+	// Setting int 50 handler
 	itr_set_handler(50, 0x8E, 8, &int50_handler); //TODO check it's the correct type
-	printf("Setting int 51 handler\n");
+	// Setting int 51 handler
 	itr_set_handler(51, 0x8E, 8, &int51_handler); //TODO check it's the correct type
-	printf("Setting IRQ0 handler\n");
+	// Setting IRQ0 handler
 	itr_set_handler(32, 0x8E, 8, &irq0_handler); //TODO check it's the correct type
-	printf("Programming PIC\n");
+	// Programming PIC
 	pit_configure(CHANNEL_0, SQUARE_WAVE_GENERATOR, PIT_FREQUENCY_HZ/1000); // -> 1000 times per second
-	printf("Enabling IRQ 0\n");
+	// Enabling IRQ 0
 	pic_enable(0);
+	printf("Scheduler initialized\n");
 }
