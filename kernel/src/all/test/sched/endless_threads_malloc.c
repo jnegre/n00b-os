@@ -1,9 +1,10 @@
-#include <kernel/sched.h>
 #include <test.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <threads.h>
 
-static void thread(void* integer) {
+static noreturn int thread(void* integer) {
 	uint32_t i = (uint32_t)integer;
 	while(true) {
 		//printf("%u", i);
@@ -16,9 +17,10 @@ static void thread(void* integer) {
 }
 
 void test_sched_endless_threads_malloc(void) {
-	printf("Lauching 4 test threads\n");
-	sched_new_thread(&thread, (void*)1, PRIORITY_NORMAL);
-	sched_new_thread(&thread, (void*)2, PRIORITY_NORMAL);
-	sched_new_thread(&thread, (void*)3, PRIORITY_NORMAL);
-	sched_new_thread(&thread, (void*)4, PRIORITY_NORMAL);
+	thrd_t one, two, three, four;
+	thrd_create(&one, &thread, (void*)1);
+	thrd_create(&two, &thread, (void*)2);
+	thrd_create(&three, &thread, (void*)3);
+	thrd_create(&four, &thread, (void*)4);
+	printf("Launched 4 test threads with ids %u, %u, %u and %u.\n", one, two, three, four);
 }

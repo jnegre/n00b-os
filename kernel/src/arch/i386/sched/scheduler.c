@@ -184,7 +184,7 @@ void sched_yield(void) {
 	sched_sleep(0);
 }
 
-static task_t* create_new_task(void (*run)(void*), void* data, enum thread_priority priority) {
+static task_t* create_new_task(int (*func)(void*), void* data, enum thread_priority priority) {
 	uint32_t tid = nexttid();
 
 	//create the new pcb
@@ -229,7 +229,7 @@ static task_t* create_new_task(void (*run)(void*), void* data, enum thread_prior
 	*(uint32_t*)(sp-=4) = (uint32_t)&sched_exit; // address that will be used by the ret at the end of the call of run
 	*(uint32_t*)(sp-=4) = 0x00200286; //EFlags
 	*(uint32_t*)(sp-=4) = cs; //CS
-	*(uint32_t*)(sp-=4) = (uint32_t)run; //EIP
+	*(uint32_t*)(sp-=4) = (uint32_t)func; //EIP
 	*(uint32_t*)(sp-=4) = 0; // EAX
 	*(uint32_t*)(sp-=4) = 0; // ECX
 	*(uint32_t*)(sp-=4) = 0; // EDX
@@ -262,10 +262,14 @@ static task_t* create_new_task(void (*run)(void*), void* data, enum thread_prior
 	return new_task;
 }
 
-void sched_new_thread(void (*run)(void*), void* data, enum thread_priority priority) {
+void sched_new_thread(uint32_t* tid, int (*func)(void*), void* data, enum thread_priority priority) {
 	itr_disable();
-	put_in_schedule_ring(create_new_task(run, data, priority));
+	task_t* new_task = create_new_task(func, data, priority);
+	put_in_schedule_ring(new_task);
 	itr_enable();
+	if(tid != NULL) {
+		*tid = new_task->pcb->tid;
+	}
 }
 
 void sched_kill_task(int res) {
@@ -281,7 +285,7 @@ void sched_kill_task(int res) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-static void idle(void* not_used) {
+static noreturn int idle(void* not_used) {
 	#pragma GCC diagnostic pop
 	while(true) {
 		asm("hlt;");

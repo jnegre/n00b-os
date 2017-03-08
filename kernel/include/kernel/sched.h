@@ -23,11 +23,11 @@ process_control_block_t* current_process_control_block(void);
 
 /*
  * Creates a new thread for the process.
- * run: function to be executed by the new thread.
- * data: parameter for the function "run"
- * The function "run"" should never return, or bad things will happen.
+ * tid: pointer to memory location to put the identifier of the new thread (can be NULL)
+ * func: function to be executed by the new thread.
+ * data: parameter for the function "func"
  */
-void sched_new_thread(void (*run)(void*), void* data, enum thread_priority priority);
+void sched_new_thread(uint32_t* tid, int (*func)(void*), void* data, enum thread_priority priority);
 
 /*
  * Puts the current thread to sleep for a specific duration.

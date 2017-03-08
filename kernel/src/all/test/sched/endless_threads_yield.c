@@ -1,10 +1,10 @@
-#include <kernel/sched.h>
 #include <test.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <threads.h>
 
-static void thread(void* integer) {
+static noreturn int thread(void* integer) {
 	uint32_t i = (uint32_t)integer;
 	while(true) {
 		printf("[%u]", i);
@@ -13,8 +13,8 @@ static void thread(void* integer) {
 }
 
 void test_sched_endless_threads_yield(void) {
-	printf("Lauching 5 test threads\n");
+	printf("Launching 5 test threads\n");
 	for(int i=1; i<=5; i++) {
-		sched_new_thread(&thread, (void*)i, PRIORITY_NORMAL);
+		thrd_create(NULL, &thread, (void*)i);
 	}
 }

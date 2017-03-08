@@ -64,12 +64,12 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 		(pcb->mm_info->heap_end - pcb->mm_info->heap_start)
 		);
 
-	//test_sched_endless_threads_malloc();
+	test_sched_endless_threads_malloc();
 	//test_sched_endless_threads_basic();
 	//test_sched_endless_threads_yield();
 	//test_sched_endless_threads_sleep();
 	//test_sched_threads_exit();
-	test_sched_threads_basic();
+	//test_sched_threads_basic();
 
 	printf("Main kernel thread will sleep from now on.\n");
 	while(true) {

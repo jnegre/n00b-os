@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <threads.h>
 
-static void thread(void* ch) {
+static int thread(void* ch) {
 	char* c = (char*)ch;
 	int dummy = 0;
 	for(int i=0; i<200; i++) {
@@ -14,12 +14,13 @@ static void thread(void* ch) {
 		printf("%c", *c, dummy);
 	}
 	printf("[RIP %u]", thrd_current());
+	return 0;
 }
 
 void test_sched_threads_basic(void) {
-	printf("Lauching 3 test threads\n");
+	printf("Launching 3 test threads\n");
 	char* lnh = "LNH";
-	sched_new_thread(&thread, lnh, PRIORITY_LOW);
-	sched_new_thread(&thread, lnh+1, PRIORITY_NORMAL);
-	sched_new_thread(&thread, lnh+2, PRIORITY_HIGH);
+	sched_new_thread(NULL, &thread, lnh, PRIORITY_LOW);
+	sched_new_thread(NULL, &thread, lnh+1, PRIORITY_NORMAL);
+	sched_new_thread(NULL, &thread, lnh+2, PRIORITY_HIGH);
 }
