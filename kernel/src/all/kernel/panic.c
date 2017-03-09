@@ -1,8 +1,8 @@
 #include <kernel/panic.h>
 #include <kernel/tty.h>
+#include <stdio.h>
 
-void panic(const char* msg) {
-	terminal_writestring("\n\nKernel panic: ");
-	terminal_writestring(msg);
+void kernel_panic(const char* file, unsigned int line, const char* msg) {
+	printf("\n\nKernel panic: %s (%s line %u)", msg, file, line);
 	halt();
 }

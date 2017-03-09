@@ -36,6 +36,8 @@ msg_early_too_big_mmap:
 	.asciz "T\360o\360o\360 \360b\360i\360g\360 \360m\360m\360a\360p\360"
 
 #other messages
+filename:
+	.asciz "kernel/src/arch/i386/boot.S" # FIXME would be nicer to use a macro
 msg_return_from_kernel_main:
 	.asciz "returned from kernel_main"
 
@@ -271,7 +273,9 @@ reload_CS:
 
 	# The kernel shouldn't get there
 	push $msg_return_from_kernel_main
-	call panic
+	push $276 # FIXME use __LINE__
+	push $filename
+	call kernel_panic
 	
 # Set the size of the _start symbol to the current location '.' minus its start.
 # This is useful when debugging or when you implement call tracing.
