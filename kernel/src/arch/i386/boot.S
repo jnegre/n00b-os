@@ -8,6 +8,7 @@
 # Declare constants for the multiboot information
 .set BOOTLOADER_MAGIC, 0x2BADB002  # This should be in %eax
 .set MAX_MEMORY_MAP_SIZE, 24*20    # Enough for 20 standard multiboot_memory_map_t
+.set MAX_INITRD_SIZE, 10*1024
 
 # The kernel is located at 3GiB (+ 1MiB) but loaded at 1MiB.
 # Until paging is enabled, we must substract this value to all addresses.
@@ -34,6 +35,12 @@ msg_early_no_mmap_flag:
 	.asciz "N\360o\360 \360m\360m\360a\360p\360 \360f\360l\360a\360g\360"
 msg_early_too_big_mmap:
 	.asciz "T\360o\360o\360 \360b\360i\360g\360 \360m\360m\360a\360p\360"
+msg_early_no_mods_flag:
+	.asciz "N\360o\360 \360m\360o\360d\360s\360 \360f\360l\360a\360g\360"
+msg_early_not_one_mod:
+	.asciz "D\360i\360d\360n\360'\360t\360 \360h\360a\360v\360e\360 \360a\360 \360s\360i\360n\360g\360l\360e\360 \360m\360o\360d\360"
+msg_early_too_big_initrd:
+	.asciz "T\360o\360o\360 \360b\360i\360g\360 \360i\360n\360i\360t\360r\360d\360"
 
 #other messages
 filename:
@@ -91,9 +98,13 @@ boot_pagetab2: # For the stack
 mm_freepage:
 	.skip 4096
 memory_map_length:
-	.skip 16
+	.skip 4
 memory_map:
 	.skip MAX_MEMORY_MAP_SIZE
+initrd_length:
+	.skip 4
+initrd_image:
+	.skip MAX_INITRD_SIZE
 
 # The linker script specifies _start as the entry point to the kernel and the
 # bootloader will jump to this position once the kernel has been loaded. It
@@ -135,7 +146,11 @@ early_panic:
 	movl $msg_early_missing_magic-KERNEL_BASE_ADDRESS, %esi
 	cmp $BOOTLOADER_MAGIC, %eax
 	jne early_panic
-	
+
+	##
+	## Memory map
+	##
+
 	# Check we have a memory map
 	movl $msg_early_no_mmap_flag-KERNEL_BASE_ADDRESS, %esi
 	bt $6, (%ebx) # bit 6 in the flags entry
@@ -152,6 +167,34 @@ early_panic:
 	movl %ecx, memory_map_length-KERNEL_BASE_ADDRESS
 	movl $memory_map-KERNEL_BASE_ADDRESS, %edi
 	movl 48(%ebx), %esi
+	rep movsl
+
+	##
+	## initrd
+	##
+
+	# Check we have mods
+	movl $msg_early_no_mods_flag-KERNEL_BASE_ADDRESS, %esi
+	bt $3, (%ebx) # bit 3 in the flags entry
+	jnc early_panic
+
+	# only 1 mod is expected: initrd
+	movl $msg_early_not_one_mod-KERNEL_BASE_ADDRESS, %esi
+	cmp $1, 20(%ebx)
+	jne early_panic
+
+	# compute the size of initrd znd check it's not too big
+	movl $msg_early_too_big_initrd-KERNEL_BASE_ADDRESS, %esi
+	movl 24(%ebx), %edx # mods_addr
+	movl 4(%edx), %ecx  # mod_end
+	subl (%edx), %ecx   # mod_start
+	cmp $MAX_INITRD_SIZE, %ecx
+	jg early_panic
+
+	# copy initrd
+	movl %ecx, initrd_length-KERNEL_BASE_ADDRESS
+	movl (%edx), %esi
+	movl $initrd_image-KERNEL_BASE_ADDRESS, %edi
 	rep movsl
 	
 	##
@@ -255,11 +298,9 @@ reload_CS:
 	# set up minimal interrupts
 	call itr_init
 
-	# for correct alignment of the stack
-	pushl $0
-	pushl $0
-
 	# parameters for kernel_main
+	push $initrd_image
+	push initrd_length
 	push $memory_map
 	push memory_map_length
 
@@ -273,7 +314,7 @@ reload_CS:
 
 	# The kernel shouldn't get there
 	push $msg_return_from_kernel_main
-	push $276 # FIXME use __LINE__
+	push $0 # FIXME use __LINE__
 	push $filename
 	call kernel_panic
 	

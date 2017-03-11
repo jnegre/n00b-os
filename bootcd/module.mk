@@ -1,11 +1,15 @@
 bootcd_all: bootcd/build/n00b-os.iso
 
-bootcd/build/n00b-os.iso: bootcd/src/grub.cfg kernel/build/n00b-os.kernel
+bootcd/build/n00b-os.iso: bootcd/build/initrd bootcd/src/grub.cfg kernel/build/n00b-os.kernel
 	mkdir -p bootcd/build/isodir/boot/grub/
 	cp bootcd/src/grub.cfg bootcd/build/isodir/boot/grub/grub.cfg
+	cp bootcd/build/initrd bootcd/build/isodir/boot/initrd
 	cp kernel/build/n00b-os.kernel bootcd/build/isodir/boot/n00b-os.kernel
 	grub-mkrescue -o bootcd/build/n00b-os.iso bootcd/build/isodir
-	
+
+bootcd/build/initrd: $(shell find -H bootcd/src/initrd -type f 2>/dev/null)
+	mkdir -p bootcd/build
+	tar --create --owner=root --group=root --file bootcd/build/initrd --directory bootcd/src/initrd $(shell ls bootcd/src/initrd)
 
 .PHONY: demo debug
 

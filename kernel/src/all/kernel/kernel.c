@@ -26,7 +26,7 @@
 extern int kernel_start;
 extern int kernel_end;
 
-void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
+void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t initrd_length, uint8_t* initrd) {
 	sched_init_process_control_block();
 	/* Initialize terminal interface */
 	terminal_initialize();
@@ -47,6 +47,8 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
 	mm_init_stack();
 
 	sched_init_tasks();
+
+	printf("initrd length:0x%X 1st byte: 0x%X, last byte: 0x%X\n", initrd_length, (int)initrd[0], (int)initrd[initrd_length-1]);
 
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
 		pcb->mm_info->heap_start,
