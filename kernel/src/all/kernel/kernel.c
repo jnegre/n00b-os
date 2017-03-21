@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <test/mm.h>
 #include <test/sched.h>
@@ -9,6 +10,7 @@
 #include <kernel/panic.h>
 #include <kernel/mm.h>
 #include <kernel/sched.h>
+#include <kernel/vfs.h>
 #include <arch/x86/multiboot.h>
 
 /* Check if the compiler thinks we are targeting the wrong operating system. */
@@ -25,6 +27,26 @@
 // Use only their address, as their value is meaningless
 extern int kernel_start;
 extern int kernel_end;
+
+static void print_banner() {
+	char message[77];
+	int i = 0;
+	FILE* fp = fopen("/etc/banner.conf", "r");
+	if(!fp) {
+		panic("Failed to open banner.conf");
+	}
+	int c;
+	while ((c = fgetc(fp)) != EOF && i<77) {
+		message[i++] = (char)c;
+	}
+	message[i] = 0;
+	fclose(fp);
+
+	char stars[81];
+	memset(stars, '*', i+4);
+	stars[i+4] = 0;
+	printf("%s\n* %s *\n%s\n", stars, message, stars);
+}
 
 void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t initrd_length, uint8_t* initrd) {
 	sched_init_process_control_block();
@@ -48,7 +70,8 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 
 	sched_init_tasks();
 
-	printf("initrd length:0x%X 1st byte: 0x%X, last byte: 0x%X\n", initrd_length, (int)initrd[0], (int)initrd[initrd_length-1]);
+	vfs_create_initial_fs(initrd);
+	print_banner();
 
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
 		pcb->mm_info->heap_start,

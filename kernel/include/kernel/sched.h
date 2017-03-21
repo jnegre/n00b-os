@@ -2,6 +2,7 @@
 #define _KERNEL_SCHED_H
 
 #include <kernel/mm.h>
+#include <kernel/vfs.h>
 #include <stdnoreturn.h>
 
 enum thread_priority {
@@ -16,6 +17,7 @@ typedef struct process_control_block {
 	uint32_t tid; // thread id
 	enum thread_priority priority;
 	mm_info_t* mm_info;
+	vfs_info_t* vfs_info;
 } process_control_block_t;
 
 process_control_block_t** current_process_control_block_ptr(void);
