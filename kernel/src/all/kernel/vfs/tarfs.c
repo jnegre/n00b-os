@@ -148,7 +148,7 @@ static int add_to_dir(vnode_t* dir, const char* name, vnode_t* child) {
 		free(entry);
 		return -1;
 	}
-	memcpy(name_copy, name, strlen(name)+1);
+	strcpy(name_copy, name);
 	entry->name = name_copy;
 	entry->vnode = child;
 	entry->next = data->entries;
@@ -182,7 +182,7 @@ static int lookup_parent(vnode_t* root, char* path, vnode_t** parent, char** nam
 		}
 	} while(index<length);
 	*parent = current;
-	memcpy(*name, nm, strlen(nm)+1); // TODO implement strcpy
+	strcpy(*name, nm);
 	return 0;
 }
 
