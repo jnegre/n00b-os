@@ -62,6 +62,8 @@ typedef struct file_handle {
 	vnode_t* node;
 	struct fpos pos;
 	int flags;
+	int error;
+	int eof;
 } file_handle_t;
 
 #define VFS_OPEN_FILES_LENGTH 7

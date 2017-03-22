@@ -40,6 +40,11 @@ static void print_banner() {
 		message[i++] = (char)c;
 	}
 	message[i] = 0;
+
+	if(ferror(fp)) {
+		panic("Failed to read banner.conf");
+	}
+
 	fclose(fp);
 
 	char stars[81];

@@ -94,6 +94,8 @@ int vn_open(file_handle_t** handlepp, const char* path, const int f, const crede
 	}
 	handle->node = *node;
 	handle->flags = f;
+	handle->error = 0;
+	handle->eof = 0;
 	put_file_handle(handle);
 	*handlepp = handle;
 	free(element);
