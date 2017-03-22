@@ -156,7 +156,8 @@ static int add_to_dir(vnode_t* dir, const char* name, vnode_t* child) {
 	return 0;
 }
 
-static int lookup_parent(vnode_t* root, char* path, vnode_t** parent, char** name) {
+/* lookups the parent of path. Sets the parent's vnode and name. */
+static int lookup_parent(vnode_t* root, char* path, vnode_t** parent, char* name) {
 	vnode_t* current = root;
 	int length = strlen(path);
 	if(path[length-1] == '/') {
@@ -182,7 +183,7 @@ static int lookup_parent(vnode_t* root, char* path, vnode_t** parent, char** nam
 		}
 	} while(index<length);
 	*parent = current;
-	strcpy(*name, nm);
+	strcpy(name, nm);
 	return 0;
 }
 
@@ -255,11 +256,9 @@ static int fs_mount(vfs_t* vfsp, const char* path, void* datap) {
 	vfs_data->root = root;
 
 	for(struct tar_header* header = datap; !is_empty_header(header); header = next_header(header)) {
-		int size = read_octal(header->size);
-		char nm[100] = {0}; // TODO useless init
-		char* bob =nm; //FIXME ugly
-		vnode_t* parent = NULL; // TODO useless
-		if(lookup_parent(root, header->filename, &parent, &bob)) {
+		char nm[100];
+		vnode_t* parent;
+		if(lookup_parent(root, header->filename, &parent, nm)) {
 			//lookup failed
 			free_all(vfs_data);
 			return -1;
@@ -271,7 +270,8 @@ static int fs_mount(vfs_t* vfsp, const char* path, void* datap) {
 			new_node = create_dir();
 		} else {
 			free_all(vfs_data);
-			return -1; // FIXME not implemented
+			// only reg and dir are implemented
+			return -1;
 		}
 		if(new_node == NULL) {
 			free_all(vfs_data);
