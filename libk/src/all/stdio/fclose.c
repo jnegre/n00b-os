@@ -1,6 +1,10 @@
 #include <stdio.h>
+#include <kernel/vfs.h>
 
 int fclose(FILE *stream) {
-	//TODO implement
-	return 0;
+	if(vn_close(stream, NULL)) {
+		return EOF;
+	} else {
+		return 0;
+	}
 }

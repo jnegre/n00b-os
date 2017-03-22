@@ -84,7 +84,7 @@ static struct tar_header* next_header(struct tar_header* header) {
  * Vnode ops
  */
 static int node_open(vnode_t** vpp, const int f, const credentials_t* c);
-static int node_close(vnode_t** vpp, const int f, const credentials_t* c);
+static int node_close(vnode_t* vpp, const int f, const credentials_t* c);
 static int node_lookup(vnode_t* vp, const char* nm, vnode_t** vpp, const credentials_t* c);
 static int node_rdwr(vnode_t* vp, uio_t* uiop, enum uio_rw rw, int f, const credentials_t* c);
 
@@ -192,7 +192,7 @@ static int node_open(vnode_t** vpp, const int f, const credentials_t* c) {
 	return 0;
 }
 
-static int node_close(vnode_t** vpp, const int f, const credentials_t* c) {
+static int node_close(vnode_t* vpp, const int f, const credentials_t* c) {
 	//TODO
 	return 0;
 }

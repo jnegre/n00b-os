@@ -46,6 +46,22 @@ static int put_file_handle(file_handle_t* file_handle) {
 	panic("Must append another vfs_open_files_t");
 }
 
+static void remove_file_handle(file_handle_t* file_handle) {
+	//iterate over all file handles since we don't store the index
+	for(
+		vfs_open_files_t* vfs_open_files = current_process_control_block()->vfs_info->files;
+		vfs_open_files!=NULL;
+		vfs_open_files=vfs_open_files->next) {
+			for(int i=0; i<VFS_OPEN_FILES_LENGTH; i++) {
+				if(vfs_open_files->handles[i] == file_handle) {
+					vfs_open_files->handles[i] = NULL;
+					return;
+				}
+			}
+		}
+		panic("Can't find file_handle to remove");
+}
+
 int vn_open(file_handle_t** handlepp, const char* path, const int f, const credentials_t* c) {
 	int error;
 	int length = strlen(path);
@@ -100,6 +116,14 @@ int vn_open(file_handle_t** handlepp, const char* path, const int f, const crede
 	*handlepp = handle;
 	free(element);
 	return 0;
+}
+
+int vn_close(file_handle_t* handlep, const credentials_t* c) {
+	int error = VN_CLOSE(handlep->node, handlep->flags, c);
+	remove_file_handle(handlep);
+	handlep->node = NULL; // just to be sure it's not used by mistake
+	free(handlep);
+	return error;
 }
 
 int vn_rdwr(file_handle_t* handlep, enum uio_rw rw, char* buffer, size_t* length, const credentials_t* c) {
