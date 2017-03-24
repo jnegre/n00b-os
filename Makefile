@@ -1,5 +1,5 @@
 #Master makefile
-MODULES:=libk kernel bootcd
+MODULES:=libk kernel bootcd utils
 
 #FIXME should be configured from some external file, with default values
 HOST:=i686-elf
@@ -43,6 +43,7 @@ $(1)/build/objs/%.o: $(1)/src/%.c
 	$$(CC) -MD -MP -c $$< -o $$@ -std=gnu11 $$(CFLAGS) $$(foreach INCLUDE,$$($(1)_INCLUDE_DIRS),-I$$(INCLUDE))
 
 $(1)/build/objs/%.o: $(1)/src/%.S
+	@mkdir -p $$(dir $$@)
 	$$(AS) --MD $$(@:.o=.d) $$(SFLAGS) -o $$@ $$<
 
 clean: $(1)_clean
