@@ -51,7 +51,7 @@ static task_t* doomed_task = NULL;
 static task_t* idle_task; //TODO give it PID 0
 
 /* 
- * Returns the next gdt_info.
+ * Returns the next page_dir.
  * All parameters are used in (current task) and out (next task).
  */
 uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
@@ -80,7 +80,7 @@ uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
 			esp = idle_task->ms->esp;
 		}
 	}
-	return (current_task!=NULL ? current_task : idle_task)->pcb->mm_info->gdt_info;
+	return (current_task!=NULL ? current_task : idle_task)->pcb->mm_info->page_dir;
 }
 
 /*

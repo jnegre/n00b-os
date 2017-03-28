@@ -8,7 +8,7 @@
 #define MM_PAGE_SIZE 4096
 
 typedef struct mm_info {
-	uintptr_t gdt_info;
+	uintptr_t page_dir; //cr3
 	semaphore_t heap_semaphore;
 	uintptr_t heap_start;
 	uintptr_t heap_end;

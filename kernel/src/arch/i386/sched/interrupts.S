@@ -13,8 +13,8 @@
 	// the 2 parameters now contain the new values
 	pop %ebx
 	pop %ecx
-	// set new GDT
-	lgdt (%eax)
+	// set new page dir
+	movl %eax, %cr3
 	// set new SS
 	mov %bx, %ss
 	// set new ESP

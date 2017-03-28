@@ -6,9 +6,9 @@
 
 void sched_init_process_control_block(void) {
 	extern int kernel_end;
-	extern int gdt_info;
+	extern int boot_pagedir;
 	static mm_info_t init_mm_info = {
-		.gdt_info = (uintptr_t)&gdt_info,
+		.page_dir = (uintptr_t)&boot_pagedir - 0xC0000000,
 		.heap_semaphore = SEMAPHORE_INIT,
 		.heap_start = (uintptr_t)&kernel_end,
 		.heap_end = (uintptr_t)&kernel_end

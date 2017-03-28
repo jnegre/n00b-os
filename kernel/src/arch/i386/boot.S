@@ -87,6 +87,7 @@ gdt_info:
 
 .section .bss
 	.align 4096 #required for page directory + page table
+.global boot_pagedir
 boot_pagedir:
 	.skip 4096
 boot_pagetab1: # For the kernel
