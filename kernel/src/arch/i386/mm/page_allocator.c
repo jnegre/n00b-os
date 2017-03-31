@@ -5,12 +5,13 @@
 #include <string.h>
 
 #include <kernel/mm.h>
+#include <kernel/panic.h>
 #include <kernel/sync.h>
 #include <arch/x86/multiboot.h>
 
 extern int kernel_physical_end;
 extern volatile uintptr_t mm_freepage; // virtual address to temporary map to
-                                       // FIXME take care of the physical memory at this addr at boot
+                                       // TODO take care of the physical memory at this addr at boot
 static mutex_t mutex = MUTEX_INIT;
 static uintptr_t *kernel_page_dir = (uintptr_t*) 0xFFFFF000; // last page in vmem is mapped to the page dir
 static uintptr_t first_free_page = 0;
@@ -20,23 +21,24 @@ static uint32_t stat_mark = 0;
 typedef struct __attribute__ ((packed)){
 	int pagetable;
 	int page;
-}pageinfo, *ppageinfo;
+}pageinfo;
 
 static pageinfo mm_virtaddrtopageindex(uintptr_t addr){
 	pageinfo pginf;
 
 	// align address to 4k (highest 20-bits of address)
 	addr &= ~0xFFF;
-	//FIXME use bit shifts
 	pginf.pagetable = addr / 0x400000; // each page table covers 0x400000 bytes in memory
 	pginf.page = (addr % 0x400000) / 0x1000; //0x1000 = page size
 	return pginf;
 }
 
-static pageinfo mm_freepage_info;
+static uintptr_t* mm_freepage_pte;
 
-//FIXME move elsewhere
-static inline uintptr_t max(uintptr_t a, uintptr_t b) {
+#define MAP_TO_FREEPAGE(page_table_entry) {*mm_freepage_pte = page_table_entry; invlpg((void*)&mm_freepage);}
+
+//TODO move elsewhere
+static inline uint64_t max(uint64_t a, uint64_t b) {
 	return a<b ? b : a;
 }
 static inline uint64_t min(uint64_t a, uint64_t b) {
@@ -51,8 +53,10 @@ static void mark_page(uintptr_t physical_addr, uintptr_t next);
  * We still have the entire memory outside of the kernel that booted for us.
  */
 void mm_init_page_allocator(uint32_t mmap_length, multiboot_memory_map_t* mmap) {
-	mm_freepage_info = mm_virtaddrtopageindex((uintptr_t)&mm_freepage);
-	uintptr_t page_after_kernel = (((uintptr_t) &kernel_physical_end >> 12) + 1)*4096; //FIXME rename
+	pageinfo mm_freepage_info = mm_virtaddrtopageindex((uintptr_t)&mm_freepage);
+	uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
+	mm_freepage_pte = &page_table[mm_freepage_info.page];
+	uintptr_t page_after_kernel = (((uintptr_t) &kernel_physical_end >> 12) + 1)*4096;
 	uintptr_t previous = 0;
 	
 	// go through all unused pages of physical memory and mark them with the addr of the next one
@@ -61,21 +65,19 @@ void mm_init_page_allocator(uint32_t mmap_length, multiboot_memory_map_t* mmap) 
 			(uint32_t)mm < (uint32_t)(mmap)+mmap_length;
 			mm = (multiboot_memory_map_t*)((uint32_t)mm+mm->size+sizeof(mm->size))) {
 		if(mm->type == 1) {
-			//FIXME overflow!?
-			for(uintptr_t next = max(page_after_kernel, mm->addr); next < min(mm->addr + mm->len, 0xFFFFFFFF); next += 4096) {
+			for(uint64_t next = max(page_after_kernel, mm->addr); next < min(mm->addr + mm->len, 0xFFFFFFFF); next += 4096) {
 				if(first_free_page == 0) {
-					first_free_page = next;
+					first_free_page = (uintptr_t)next;
 				} else {
-					mark_page(previous, next);
+					mark_page(previous, (uintptr_t)next);
 				}
-				previous = next;
+				previous = (uintptr_t)next;
 			}
 		}
 	}
 	mark_page(previous, 0);// close the linked list
 	// stats
 	printf("Marked physical pages: %u\n", stat_mark);
-
 }
 
 /*
@@ -91,9 +93,7 @@ static inline void invlpg(void* m) {
 
 static void mark_page(uintptr_t physical_addr, uintptr_t next) {
 	// map
-	uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
-	page_table[mm_freepage_info.page] = physical_addr | 3;
-	invlpg((void*)&mm_freepage);
+	MAP_TO_FREEPAGE(physical_addr | 3);
 	// write
 	mm_freepage = next;
 	// for stats
@@ -106,9 +106,7 @@ uintptr_t mm_alloc_physical_page(const bool zero) {
 	uintptr_t page = first_free_page;
 	if(page != 0) {
 		// map
-		uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
-		page_table[mm_freepage_info.page] = page | 3;
-		invlpg((void*)&mm_freepage);
+		MAP_TO_FREEPAGE(page | 3);
 		// read next
 		first_free_page = mm_freepage;
 		// zero page if requested
@@ -116,8 +114,7 @@ uintptr_t mm_alloc_physical_page(const bool zero) {
 			memset((void*)&mm_freepage, 0, 4096);
 		}
 		// unmap
-		page_table[mm_freepage_info.page] = 0;
-		invlpg((void*)&mm_freepage);
+		MAP_TO_FREEPAGE(0);
 	}
 	mutex_release(&mutex);
 	return page;
@@ -126,14 +123,11 @@ uintptr_t mm_alloc_physical_page(const bool zero) {
 void mm_free_physical_page(uintptr_t physical_addr){
 	mutex_acquire(&mutex);
 	// map
-	uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
-	page_table[mm_freepage_info.page] = physical_addr | 3;
-	invlpg((void*)&mm_freepage);
+	MAP_TO_FREEPAGE(physical_addr | 3);
 	// link to next entry
 	mm_freepage = first_free_page;
 	// unmap
-	page_table[mm_freepage_info.page] = 0;
-	invlpg((void*)&mm_freepage);
+	MAP_TO_FREEPAGE(0);
 	// update
 	first_free_page = physical_addr;
 	mutex_release(&mutex);
@@ -158,7 +152,7 @@ int mm_map_page(uintptr_t phys_address, uintptr_t virt_address){
 		} else {
 			// page is already mapped
 			mutex_release(&mutex);
-			return -1; //FIXME use const
+			return -1;
 		}
 	} else {
 		// doesn't exist, so alloc a page and add into pdir
@@ -171,7 +165,7 @@ int mm_map_page(uintptr_t phys_address, uintptr_t virt_address){
 	}
 	invlpg((void*)virt_address);
 	mutex_release(&mutex);
-	return 0; //FIXME use const
+	return 0;
 }
 
 void mm_unmap_page(uintptr_t virt_address){
@@ -208,19 +202,16 @@ void mm_unmap_page(uintptr_t virt_address){
 //FIXME all further modification in the kernel space portion must be replicated in all other page directories
 uintptr_t mm_new_page_directory(void) {
 	// get a zeroed page
-	uintptr_t new_page_dir = mm_alloc_physical_page(true); //TODO check if null
+	uintptr_t new_page_dir = mm_alloc_physical_page(true); //FIXME check if null
 	mutex_acquire(&mutex);
 	// map it to edit it
-	uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
-	page_table[mm_freepage_info.page] = new_page_dir | 3;
-	invlpg((void*)&mm_freepage);
+	MAP_TO_FREEPAGE(new_page_dir | 3);
 	// copy kernel space portion
 	memcpy((void*)(&mm_freepage+768), &kernel_page_dir[768], 255 * sizeof(uintptr_t));
 	// maps to itself
 	((uintptr_t*)&mm_freepage)[1023] = new_page_dir | 3;
 	// unmap
-	page_table[mm_freepage_info.page] = 0;
-	invlpg((void*)&mm_freepage);
+	MAP_TO_FREEPAGE(0);
 	mutex_release(&mutex);
 	return new_page_dir;
 }
