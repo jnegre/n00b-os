@@ -11,7 +11,7 @@ bootcd/build/initrd: $(shell find -H bootcd/src/initrd -type f 2>/dev/null) util
 	mkdir -p bootcd/build/initrd.directory/bin
 	cp -r bootcd/src/initrd/* bootcd/build/initrd.directory
 	cp -r utils/build/bin/* bootcd/build/initrd.directory/bin
-	tar --create --owner=root --group=root --file bootcd/build/initrd --directory bootcd/build/initrd.directory `ls bootcd/build/initrd.directory`
+	tar --create --format=ustar --owner=root --group=root --file bootcd/build/initrd --directory bootcd/build/initrd.directory `ls bootcd/build/initrd.directory`
 
 .PHONY: demo debug
 

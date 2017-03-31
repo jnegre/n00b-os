@@ -256,6 +256,10 @@ static int fs_mount(vfs_t* vfsp, const char* path, void* datap) {
 	vfs_data->root = root;
 
 	for(struct tar_header* header = datap; !is_empty_header(header); header = next_header(header)) {
+		if(!is_valid_header(header)) {
+			free_all(vfs_data);
+			return -1;
+		}
 		char nm[100];
 		vnode_t* parent;
 		if(lookup_parent(root, header->filename, &parent, nm)) {
