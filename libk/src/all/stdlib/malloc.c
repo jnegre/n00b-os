@@ -62,13 +62,13 @@ void* malloc( size_t size ) {
 	const size_t start_size = aligned_size(sizeof(chunck_marker_start_t));
 	const size_t end_size = aligned_size(sizeof(chunck_marker_end_t));
 
-	mm_info_t* mm_info = current_process_control_block()->mm_info;
+	mm_ring_info_t* info = current_process_control_block()->mm_info->kernel_info;
 	uintptr_t best_ptr = 0;
 	chunck_marker_start_t* last_marker = NULL;
 	size_t best_size;
-	semaphore_acquire(&mm_info->heap_semaphore);
-	uintptr_t ptr = mm_info->heap_start;
-	while(ptr < mm_info->heap_end) {
+	semaphore_acquire(&info->heap_semaphore);
+	uintptr_t ptr = info->heap_start;
+	while(ptr < info->heap_end) {
 		last_marker = (chunck_marker_start_t*)ptr;
 		if(last_marker->free && last_marker->size >= useable_size && (best_ptr == 0 || last_marker->size < best_size)) {
 			// found a better match
@@ -94,7 +94,7 @@ void* malloc( size_t size ) {
 		}
 		// use it
 		mark_chunck(best_ptr, useable_size, false);
-		semaphore_release(&mm_info->heap_semaphore);
+		semaphore_release(&info->heap_semaphore);
 		return (void*)(best_ptr + start_size);
 	} else {
 		// need to allocate some more memory
@@ -102,7 +102,7 @@ void* malloc( size_t size ) {
 		size_t free_size;
 		if(last_marker == NULL || !last_marker->free) {
 			// we must start at the begining of a new page
-			insertion_point = mm_info->heap_end;
+			insertion_point = info->heap_end;
 			free_size = 0;
 		} else {
 			// let's merge with the last free chunck
@@ -116,10 +116,10 @@ void* malloc( size_t size ) {
 			if(new_page == 0) {
 				panic("failed to increase heap size (alloc)");
 			}
-			if(mm_map_page(new_page, mm_info->heap_end)) {
+			if(mm_map_page(new_page, info->heap_end)) {
 				panic("failed to increase heap size (map)");
 			}
-			mm_info->heap_end += MM_PAGE_SIZE;
+			info->heap_end += MM_PAGE_SIZE;
 			free_size += MM_PAGE_SIZE;
 		}
 		if(free_size > useable_size + 2*start_size + 2*end_size) {
@@ -132,7 +132,7 @@ void* malloc( size_t size ) {
 			useable_size = free_size - start_size - end_size;
 		}
 		mark_chunck(insertion_point, useable_size, false);
-		semaphore_release(&mm_info->heap_semaphore);
+		semaphore_release(&info->heap_semaphore);
 		return (void*)(insertion_point + start_size);
 	}
 }
@@ -142,7 +142,7 @@ void free( void* ptr ) {
 		return;
 	}
 
-	mm_info_t* mm_info = current_process_control_block()->mm_info;
+	mm_ring_info_t* info = current_process_control_block()->mm_info->kernel_info;
 
 	const size_t start_size = aligned_size(sizeof(chunck_marker_start_t));
 	const size_t end_size = aligned_size(sizeof(chunck_marker_end_t));
@@ -152,17 +152,17 @@ void free( void* ptr ) {
 	if(end->canary != CANARY) {
 		panic("Dead heap canary");
 	}
-	semaphore_acquire(&mm_info->heap_semaphore);
+	semaphore_acquire(&info->heap_semaphore);
 	start->free = true;
 	
 	// merge with chuncks before/after	
 	chunck_marker_start_t* start_after = (chunck_marker_start_t*)(ptr + start->size + end_size);
-	if((uintptr_t)start_after < mm_info->heap_end && start_after->free) {
+	if((uintptr_t)start_after < info->heap_end && start_after->free) {
 		mark_chunck((uintptr_t)start, start->size + start_after->size + start_size + end_size, true);
 	}
 
 	chunck_marker_end_t* end_before = (chunck_marker_end_t*)(ptr - start_size - end_size);
-	if((uintptr_t)end_before > mm_info->heap_start) {
+	if((uintptr_t)end_before > info->heap_start) {
 		if(end_before->canary != CANARY) {
 			panic("Dead heap canary");
 		}
@@ -172,5 +172,5 @@ void free( void* ptr ) {
 		}
 	}
 
-	semaphore_release(&mm_info->heap_semaphore);
+	semaphore_release(&info->heap_semaphore);
 }

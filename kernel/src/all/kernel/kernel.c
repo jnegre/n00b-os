@@ -79,9 +79,9 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 	print_banner();
 
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
-		pcb->mm_info->heap_start,
-		pcb->mm_info->heap_end,
-		(pcb->mm_info->heap_end - pcb->mm_info->heap_start)
+		pcb->mm_info->kernel_info->heap_start,
+		pcb->mm_info->kernel_info->heap_end,
+		(pcb->mm_info->kernel_info->heap_end - pcb->mm_info->kernel_info->heap_start)
 		);
 
 	//let's test the mm
@@ -89,15 +89,15 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 	//and malloc
 	//test_malloc();
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
-		pcb->mm_info->heap_start,
-		pcb->mm_info->heap_end,
-		(pcb->mm_info->heap_end - pcb->mm_info->heap_start)
+		pcb->mm_info->kernel_info->heap_start,
+		pcb->mm_info->kernel_info->heap_end,
+		(pcb->mm_info->kernel_info->heap_end - pcb->mm_info->kernel_info->heap_start)
 		);
 
-	test_sched_endless_threads_malloc();
+	//test_sched_endless_threads_malloc();
 	//test_sched_endless_threads_basic();
 	//test_sched_endless_threads_yield();
-	//test_sched_endless_threads_sleep();
+	test_sched_endless_threads_sleep();
 	//test_sched_threads_exit();
 	//test_sched_threads_basic();
 

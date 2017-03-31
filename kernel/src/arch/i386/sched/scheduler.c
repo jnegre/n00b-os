@@ -184,7 +184,7 @@ void sched_yield(void) {
 	sched_sleep(0);
 }
 
-static task_t* create_new_task(int (*func)(void*), void* data, enum thread_priority priority) {
+static task_t* create_new_task(int (*func)(void*), void* data, enum thread_priority priority, bool new_process) {
 	uint32_t tid = nexttid();
 
 	//create the new pcb
@@ -194,12 +194,23 @@ static task_t* create_new_task(int (*func)(void*), void* data, enum thread_prior
 	}
 	new_pcb->tid = tid;
 	new_pcb->priority = priority;
-	//we have the same mm_info & tgid than the current one
 	process_control_block_t* current_pcb = current_process_control_block();
-	new_pcb->tgid = current_pcb->tgid;
-	new_pcb->mm_info = current_pcb->mm_info;
+	if(new_process) {
+		new_pcb->tgid = tid;
+		mm_info_t* new_mm_info = malloc(sizeof(mm_info_t));
+		if(new_mm_info == NULL) {
+			panic("Failed to allocate new mm_info");
+		}
+		new_pcb->mm_info = new_mm_info;
+		new_mm_info->kernel_info = current_pcb->mm_info->kernel_info; //shared by all processes
+		new_mm_info->page_dir = mm_new_page_directory();
+	} else {
+		//we have the same mm_info & tgid than the current one
+		new_pcb->tgid = current_pcb->tgid;
+		new_pcb->mm_info = current_pcb->mm_info;
+	}
 
-	// create a new stack
+	// create a new kernel stack
 	// TODO but not like this
 	uintptr_t stack_top = 0xFFBFC000 - (tid-2) * 4*4096;
 	for(int i=1; i<=4; i++) {
@@ -264,7 +275,7 @@ static task_t* create_new_task(int (*func)(void*), void* data, enum thread_prior
 
 void sched_new_thread(uint32_t* tid, int (*func)(void*), void* data, enum thread_priority priority) {
 	itr_disable();
-	task_t* new_task = create_new_task(func, data, priority);
+	task_t* new_task = create_new_task(func, data, priority, false);
 	put_in_schedule_ring(new_task);
 	itr_enable();
 	if(tid != NULL) {
@@ -294,7 +305,7 @@ static noreturn int idle(void* not_used) {
 
 void sched_init_tasks(void) {
 	// setup idle task
-	idle_task = create_new_task(idle, NULL, PRIORITY_HIGH);
+	idle_task = create_new_task(idle, NULL, PRIORITY_HIGH, true);
 
 	// Setup 1st task
 	task_t* first_task = malloc(sizeof(task_t));

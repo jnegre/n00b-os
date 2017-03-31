@@ -203,3 +203,24 @@ void mm_unmap_page(uintptr_t virt_address){
 	}
 	mutex_release(&mutex);
 }
+
+/* Copies the current page directory in a new one, zeroing the user space portion */
+//FIXME all further modification in the kernel space portion must be replicated in all other page directories
+uintptr_t mm_new_page_directory(void) {
+	// get a zeroed page
+	uintptr_t new_page_dir = mm_alloc_physical_page(true); //TODO check if null
+	mutex_acquire(&mutex);
+	// map it to edit it
+	uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (mm_freepage_info.pagetable * 0x1000));
+	page_table[mm_freepage_info.page] = new_page_dir | 3;
+	invlpg((void*)&mm_freepage);
+	// copy kernel space portion
+	memcpy((void*)(&mm_freepage+768), &kernel_page_dir[768], 255 * sizeof(uintptr_t));
+	// maps to itself
+	((uintptr_t*)&mm_freepage)[1023] = new_page_dir | 3;
+	// unmap
+	page_table[mm_freepage_info.page] = 0;
+	invlpg((void*)&mm_freepage);
+	mutex_release(&mutex);
+	return new_page_dir;
+}

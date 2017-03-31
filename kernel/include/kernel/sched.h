@@ -24,6 +24,11 @@ process_control_block_t** current_process_control_block_ptr(void);
 process_control_block_t* current_process_control_block(void);
 
 /*
+ * Creates a new user process
+ */
+int process_create(const char *filename, char *const argv[]);
+
+/*
  * Creates a new thread for the process.
  * tid: pointer to memory location to put the identifier of the new thread (can be NULL)
  * func: function to be executed by the new thread.
