@@ -1,5 +1,6 @@
 #include <kernel/sched.h>
 #include <test.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -1,7 +1,6 @@
 #ifndef _KERNEL_SCHED_H
 #define _KERNEL_SCHED_H
 
-#include <kernel/mm.h>
 #include <kernel/vfs.h>
 #include <stdnoreturn.h>
 
@@ -12,11 +11,13 @@ enum thread_priority {
 	PRIORITY_HIGH=20
 };
 
+struct mm_info; // from kernel/mm.h
+
 typedef struct process_control_block {
 	uint32_t tgid; // thread group id aka pid
 	uint32_t tid; // thread id
 	enum thread_priority priority;
-	mm_info_t* mm_info;
+	struct mm_info* mm_info;
 	vfs_info_t* vfs_info;
 } process_control_block_t;
 

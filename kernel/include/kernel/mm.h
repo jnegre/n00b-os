@@ -3,14 +3,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <kernel/sync.h>
+#include <kernel/sched.h>
 #include <arch/x86/multiboot.h> //FIXME remove this dependency
 
 #define MM_PAGE_SIZE 4096
+#define MM_STACK_PAGE_SIZE 4
 
 typedef struct mm_ring_info {
 	semaphore_t heap_semaphore;
 	uintptr_t heap_start;
 	uintptr_t heap_end;
+	semaphore_t stacks_semaphore;
+	uintptr_t stacks_start; // the address where stacks start, going toward lower addresses. 0xFFC00000 in kernel land.
+	unsigned int stacks_bitmaps_length; //the number of stacks_bitmaps
+	uint32_t* stacks_bitmaps; // array of bitfields, indicates allocated stacks
 } mm_ring_info_t;
 
 typedef struct mm_info {
@@ -19,6 +25,7 @@ typedef struct mm_info {
 } mm_info_t;
 
 void mm_init_stack(void);
+uintptr_t mm_allocate_new_stack(mm_ring_info_t *info, process_control_block_t* new_pcb);
 
 void mm_init_page_allocator(uint32_t mmap_length, multiboot_memory_map_t* mmap);
 

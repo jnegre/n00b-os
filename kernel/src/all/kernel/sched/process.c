@@ -10,7 +10,11 @@ void sched_init_process_control_block(void) {
 	static mm_ring_info_t init_mm_kernel_info = {
 		.heap_semaphore = SEMAPHORE_INIT,
 		.heap_start = (uintptr_t)&kernel_end,
-		.heap_end = (uintptr_t)&kernel_end
+		.heap_end = (uintptr_t)&kernel_end,
+		.stacks_semaphore = SEMAPHORE_INIT,
+		.stacks_start = 0xFFC00000,
+		.stacks_bitmaps_length = 0, //zero since the stack isn't complete yet, see mm_init_stack
+		.stacks_bitmaps = NULL
 	};
 	static mm_info_t init_mm_info = {
 		.page_dir = (uintptr_t)&boot_pagedir - 0xC0000000,

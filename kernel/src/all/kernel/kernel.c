@@ -71,6 +71,7 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 		printf(" - size:%u addr: 0x%J to: 0x%J type: %u\n", mm->size, mm->addr, mm->addr + mm->len - 1, mm->type);
 	}
 	mm_init_page_allocator(mmap_length, mmap);
+	/* We can now use malloc! */
 	mm_init_stack();
 
 	sched_init_tasks();

@@ -2,6 +2,7 @@
 #include <kernel/sched.h>
 #include <kernel/vfs.h>
 #include <kernel/vfs/tarfs.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

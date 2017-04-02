@@ -18,11 +18,11 @@ Address | What | Note
 0xFFBFC010 | | top of stack (almost 16k)
 0xFFBFD000 | | start of 2nd page of stack
 0xFFBFE000 | | start of 3rd page of stack
-0xFFBFF000 | | start of 4th page of stack
+0xFFBFF000 | stack_bottom | start of 4th page of stack
 0xFFBFFFF0 | | bottom of stack, goes towards lower memory (16k - 16 aligned)
 0xFFBFFFF0 | | canary 0xDEADBEEF (4)
 0xFFBFFFF8 | | task_info (init) (=(ESP and FFFFD000) or 3FF8) (TBD)
-0xFFC00000 | Page Table #0 | 4k
+0xFFC00000 | mm_info->stacks_start; Page Table #0 | 4k
 0xFFC01000 | Page Table #1 | 4k
 ....||
 0xFFF00000 | Page Table #768 | 4k (for the kernel at 3G)

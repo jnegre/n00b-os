@@ -211,29 +211,14 @@ static task_t* create_new_task(int (*func)(void*), void* data, enum thread_prior
 	}
 
 	// create a new kernel stack
-	// TODO but not like this
-	uintptr_t stack_top = 0xFFBFC000 - (tid-2) * 4*4096;
-	for(int i=1; i<=4; i++) {
-		uintptr_t page = mm_alloc_physical_page(true);
-		if(page == 0) {
-			panic("Failed to allocate a page to create the stack");
-		}
-		if(mm_map_page(page, stack_top - 0x1000*i)) {
-			panic("Can't map new page for the stack");
-		}
+	uintptr_t sp = mm_allocate_new_stack(current_pcb->mm_info->kernel_info, new_pcb);
+	if(!sp) {
+		panic("Failed to allocate new stack");
 	}
-	// add the canary at the top
-	uintptr_t base = stack_top - 4*4096;
-	*(uint32_t*)(base | 0xC) = 0xDEADBEEF;
-	// and bottom
-	*(uint32_t*)(base | 0x3FF0) = 0xDEADBEEF;
-	// pcb
-	*(process_control_block_t**)(base | 0x3FF8) = new_pcb;
 
 	//fill the stack with all the "saved" registers for the various pops & (i)ret
 	uint32_t cs = 0x08;
 	uint32_t ds = 0x10;
-	uintptr_t sp = base | 0x3FF0;
 
 	*(uint32_t*)(sp-=4) = (uint32_t)42; // dummy param for sched_exit //TODO not a dummy param
 	*(uint32_t*)(sp-=4) = (uint32_t)data; // param for run
