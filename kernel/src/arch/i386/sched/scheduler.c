@@ -48,7 +48,7 @@ static task_t* sleeping_task = NULL;
 /* Tasks to kill asap (next tick) */
 static task_t* doomed_task = NULL;
 /* The idle task, does nothing but hlt */
-static task_t* idle_task; //TODO give it PID 0
+static task_t* idle_task; // PID 0
 
 /* 
  * Returns the next page_dir.
@@ -137,7 +137,6 @@ static task_t* remove_from_schedule_ring() {
 		// home alone
 		switched_task = NULL;
 	} else {
-		//TODO what a mess
 		removed->previous->next = removed->next;
 		removed->next->previous = removed->previous;
 		switched_task = removed->next;
@@ -184,9 +183,7 @@ void sched_yield(void) {
 	sched_sleep(0);
 }
 
-static task_t* create_new_task(int (*func)(void*), void* data, enum thread_priority priority, bool new_process) {
-	uint32_t tid = nexttid();
-
+static task_t* create_new_task(int (*func)(void*), void* data, enum thread_priority priority, uint32_t tid, bool new_process) {
 	//create the new pcb
 	process_control_block_t* new_pcb = malloc(sizeof(process_control_block_t));
 	if(new_pcb == NULL) {
@@ -260,7 +257,7 @@ static task_t* create_new_task(int (*func)(void*), void* data, enum thread_prior
 
 void sched_new_thread(uint32_t* tid, int (*func)(void*), void* data, enum thread_priority priority) {
 	itr_disable();
-	task_t* new_task = create_new_task(func, data, priority, false);
+	task_t* new_task = create_new_task(func, data, priority, nexttid(), false);
 	put_in_schedule_ring(new_task);
 	itr_enable();
 	if(tid != NULL) {
@@ -276,7 +273,7 @@ void sched_kill_task(int res) {
 	dead->next = doomed_task;
 	doomed_task = dead;
 	//FIXME clean-up the task in the next tick
-	//FIXME clean-up the process if it's the last task of its tgid'
+	//FIXME clean-up the process if it's the last task of its tgid
 }
 
 #pragma GCC diagnostic push
@@ -290,7 +287,7 @@ static noreturn int idle(void* not_used) {
 
 void sched_init_tasks(void) {
 	// setup idle task
-	idle_task = create_new_task(idle, NULL, PRIORITY_HIGH, true);
+	idle_task = create_new_task(idle, NULL, PRIORITY_HIGH, 0, true);
 
 	// Setup 1st task
 	task_t* first_task = malloc(sizeof(task_t));
