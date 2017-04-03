@@ -168,7 +168,11 @@ int mm_map_page(uintptr_t phys_address, uintptr_t virt_address){
 	return 0;
 }
 
-void mm_unmap_page(uintptr_t virt_address){
+/*
+ * Unmap a page and returns its physical address
+ */
+uintptr_t mm_unmap_page(uintptr_t virt_address){
+	uintptr_t phys_address = 0;
 	pageinfo pginf = mm_virtaddrtopageindex(virt_address);
 	
 	mutex_acquire(&mutex);
@@ -177,6 +181,7 @@ void mm_unmap_page(uintptr_t virt_address){
 		uintptr_t *page_table = (uintptr_t *) (0xFFC00000 + (pginf.pagetable * 0x1000));
 		if(page_table[pginf.page] & 1) {
 			// page is mapped, so unmap it
+			phys_address = page_table[pginf.page] && ~0xFFF;
 			page_table[pginf.page] = 2; // r/w, not present
 			invlpg((void*)virt_address);
 		}
@@ -196,6 +201,7 @@ void mm_unmap_page(uintptr_t virt_address){
 		}
 	}
 	mutex_release(&mutex);
+	return phys_address;
 }
 
 /* Copies the current page directory in a new one, zeroing the user space portion */

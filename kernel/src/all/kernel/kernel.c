@@ -88,7 +88,7 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 	//let's test the mm
 	//test_mm_page_allocator();
 	//and malloc
-	test_malloc();
+	//test_malloc();
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
 		pcb->mm_info->kernel_info->heap_start,
 		pcb->mm_info->kernel_info->heap_end,
@@ -98,8 +98,8 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 	//test_sched_endless_threads_malloc();
 	//test_sched_endless_threads_basic();
 	//test_sched_endless_threads_yield();
-	test_sched_endless_threads_sleep();
-	//test_sched_threads_exit();
+	//test_sched_endless_threads_sleep();
+	test_sched_threads_exit();
 	//test_sched_threads_basic();
 
 	printf("Main kernel thread will sleep from now on.\n");

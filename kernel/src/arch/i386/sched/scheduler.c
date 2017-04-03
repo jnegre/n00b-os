@@ -83,6 +83,22 @@ uintptr_t sched_switch_next_task(uint16_t ss, uint32_t esp) {
 	return (current_task!=NULL ? current_task : idle_task)->pcb->mm_info->page_dir;
 }
 
+static void cleanup_doomed_tasks(void) {
+	task_t* task = doomed_task;
+	while(task != NULL) {
+		task_t* next_task = task->next;
+		// free the kernel stack
+		mm_free_stack(task->pcb->mm_info->kernel_info, task->ms->esp);
+		//free memory
+		free(task->ms);
+		free(task->pcb);
+		//FIXME clean-up the process (and free mm_info, page_dir) if it's the last task of its tgid
+
+		task = next_task;
+	}
+	doomed_task = NULL;
+}
+
 /*
  * Do not call when interrupts are enabled.
  */
@@ -108,6 +124,8 @@ static void put_in_schedule_ring(task_t* task) {
 
 /* Called every 1 ms */
 void sched_ms_tick(void) {
+	// clean-up dead tasks
+	cleanup_doomed_tasks();
 	// wake up sleeping tasks
 	if(sleeping_task != NULL) {
 		-- sleeping_task->remaining_ticks;
@@ -208,7 +226,7 @@ static task_t* create_new_task(int (*func)(void*), void* data, enum thread_prior
 	}
 
 	// create a new kernel stack
-	uintptr_t sp = mm_allocate_new_stack(current_pcb->mm_info->kernel_info, new_pcb);
+	uintptr_t sp = mm_alloc_stack(current_pcb->mm_info->kernel_info, new_pcb);
 	if(!sp) {
 		panic("Failed to allocate new stack");
 	}
@@ -272,8 +290,6 @@ void sched_kill_task(int res) {
 	task_t* dead = remove_from_schedule_ring();
 	dead->next = doomed_task;
 	doomed_task = dead;
-	//FIXME clean-up the task in the next tick
-	//FIXME clean-up the process if it's the last task of its tgid
 }
 
 #pragma GCC diagnostic push

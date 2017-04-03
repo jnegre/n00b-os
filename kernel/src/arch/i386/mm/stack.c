@@ -60,7 +60,7 @@ static int find_free_bit(uint32_t bitfield) {
  * Sets up the canaries and pcb
  * Returns the stack pointer, or 0 if OOM
  */
-uintptr_t mm_allocate_new_stack(mm_ring_info_t *info, process_control_block_t* new_pcb) {
+uintptr_t mm_alloc_stack(mm_ring_info_t *info, process_control_block_t* new_pcb) {
 	// allocate pages before semaphore_acquire
 	uintptr_t pages[MM_STACK_PAGE_SIZE];
 	for(int i=0; i<MM_STACK_PAGE_SIZE; i++) {
@@ -92,7 +92,7 @@ uintptr_t mm_allocate_new_stack(mm_ring_info_t *info, process_control_block_t* n
 	semaphore_release(&info->stacks_semaphore);
 	// TODO check we don't collide with the heap
 	// maps + puts canary and pcb
-	uintptr_t stack_top = info->stacks_start - ((32*bitmap_id + bitmap_field + 1)*MM_STACK_PAGE_SIZE*MM_PAGE_SIZE);
+	uintptr_t stack_top = info->stacks_start - ((32*bitmap_id + bitmap_field)*MM_STACK_PAGE_SIZE*MM_PAGE_SIZE);
 	for(int i=1; i<=MM_STACK_PAGE_SIZE; i++) {
 		if(mm_map_page(pages[i-1], stack_top - 0x1000*i)) {
 			for(int j=0; j<MM_STACK_PAGE_SIZE; j++) {
@@ -111,4 +111,19 @@ uintptr_t mm_allocate_new_stack(mm_ring_info_t *info, process_control_block_t* n
 	uintptr_t sp = base | 0x3FF0;
 
 	return sp;
+}
+
+void mm_free_stack(mm_ring_info_t *info, uintptr_t sp) {
+	unsigned int bitmap_field = (info->stacks_start - sp)/(MM_STACK_PAGE_SIZE*MM_PAGE_SIZE);
+	unsigned int bitmap_id = bitmap_field/32;
+	bitmap_field = bitmap_field%32;
+	// unmap + free memory
+	uintptr_t stack_top = info->stacks_start - ((32*bitmap_id + bitmap_field)*MM_STACK_PAGE_SIZE*MM_PAGE_SIZE);
+	for(int i=1; i<=MM_STACK_PAGE_SIZE; i++) {
+		mm_free_physical_page(mm_unmap_page(stack_top - 0x1000*i));
+	}
+	// update info
+	semaphore_acquire(&info->stacks_semaphore);
+	info->stacks_bitmaps[bitmap_id] &= ~(1<<bitmap_field);
+	semaphore_release(&info->stacks_semaphore);
 }
