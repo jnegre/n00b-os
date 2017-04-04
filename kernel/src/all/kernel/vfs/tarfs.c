@@ -1,5 +1,8 @@
 #include <kernel/vfs.h>
 #include <kernel/vfs/tarfs.h>
+
+#include <kernel/list.h>
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -22,11 +25,11 @@ struct tar_reg_data {
 struct tar_dir_entry {
 	char* name;
 	vnode_t* vnode;
-	struct tar_dir_entry* next;
+	struct list_head list;
 };
 
 struct tar_dir_data {
-	struct tar_dir_entry* entries;
+	struct list_head entry_list;
 };
 
 /*
@@ -108,6 +111,7 @@ static vnode_t* create_dir(void) {
 		free(node);
 		return NULL;
 	}
+	data->entry_list = LIST_HEAD_INIT(data->entry_list);
 	node->data = data;
 	return node;
 }
@@ -151,8 +155,7 @@ static int add_to_dir(vnode_t* dir, const char* name, vnode_t* child) {
 	strcpy(name_copy, name);
 	entry->name = name_copy;
 	entry->vnode = child;
-	entry->next = data->entries;
-	data->entries = entry;
+	list_add(&data->entry_list, &entry->list);
 	return 0;
 }
 
@@ -202,7 +205,9 @@ static int node_lookup(vnode_t* vp, const char* nm, vnode_t** vpp, const credent
 		return -1; // wrong type
 	}
 	struct tar_dir_data* data = vp->data;
-	for(struct tar_dir_entry* entry = data->entries; entry != NULL; entry = entry->next) {
+	struct list_head* item;
+	LIST_FOR_EACH(item, &data->entry_list) {
+		struct tar_dir_entry* entry = LIST_ENTRY(item, struct tar_dir_entry, list);
 		if(strcmp(nm, entry->name) == 0) {
 			*vpp = entry->vnode;
 			return 0;
