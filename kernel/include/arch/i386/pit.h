@@ -15,7 +15,7 @@ enum pit_mode {
 	RATE_GENERATOR = 2,
 	SQUARE_WAVE_GENERATOR = 3,
 	SOFTWARE_TRIGGERED_STROBE = 4,
-	HARdWARE_TRIGGERED_STROBE = 5
+	HARDWARE_TRIGGERED_STROBE = 5
 };
 
 void pit_configure(enum pit_channel channel, enum pit_mode mode, uint16_t reload);
