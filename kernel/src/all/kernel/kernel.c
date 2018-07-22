@@ -11,6 +11,7 @@
 #include <kernel/mm.h>
 #include <kernel/sched.h>
 #include <kernel/vfs.h>
+#include <arch/i386/input/ps2.h> // FIXME do not include arch
 #include <arch/x86/multiboot.h>
 
 /* Check if the compiler thinks we are targeting the wrong operating system. */
@@ -79,6 +80,8 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 	vfs_create_initial_fs(initrd);
 	print_banner();
 
+	ps2_init();
+
 	printf("Heap from 0x%X to 0x%X (%u bytes)\n",
 		pcb->mm_info->kernel_info->heap_start,
 		pcb->mm_info->kernel_info->heap_end,
@@ -99,7 +102,7 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 	//test_sched_endless_threads_basic();
 	//test_sched_endless_threads_yield();
 	//test_sched_endless_threads_sleep();
-	test_sched_threads_exit();
+	//test_sched_threads_exit();
 	//test_sched_threads_basic();
 
 	printf("Main kernel thread will sleep from now on.\n");
