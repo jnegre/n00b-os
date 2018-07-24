@@ -3,5 +3,6 @@
 #include <stdint.h>
 
 void kbd_handle_key(uint8_t scan);
+int kbd_getchar();
 
 #endif

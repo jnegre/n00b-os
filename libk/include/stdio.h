@@ -22,6 +22,7 @@ int fgetc(FILE *stream);
 
 // Formatted input/output
 int printf(const char *restrict format, ...);
+int getchar();
 
 // Error handling
 void clearerr(FILE *stream);

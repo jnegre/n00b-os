@@ -104,6 +104,7 @@ void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t in
 	//test_sched_endless_threads_sleep();
 	//test_sched_threads_exit();
 	//test_sched_threads_basic();
+	test_shell();
 
 	printf("Main kernel thread will sleep from now on.\n");
 	while(true) {
