@@ -93,7 +93,6 @@ void kbd_handle_key(uint8_t scan) {
 	//TODO check for E0/E1
 	uint8_t scan_code = KEY_CODE(scan);
 	bool key_up = KEY_UP(scan);
-	printf("<%X/%X/%X>", scan, scan_code, key_up);
 	kbd_key_spec_t spec = default_kbd.specs[scan_code];
 	kbd_scan_reg_t scan_reg;
 	kbd_scan_mod_t scan_mod;
