@@ -6,7 +6,7 @@
 #include <string.h>
 
 //128 chars ought to be enough for anyone
-#define BUFFER_SIZE 128
+#define BUFFER_SIZE 32
 
 static char* readline();
 static void execute(char* line );
@@ -54,8 +54,11 @@ static char* readline() {
 			printf("%c", c);
 		}
 		if(position == buffer_size) {
-			//TODO need to implement realloc
-			panic("Must realloc new buffer");
+			buffer_size += BUFFER_SIZE;
+			buffer = realloc(buffer, buffer_size);
+			if(buffer == NULL) {
+				panic("out of memory in realloc");
+			}
 		}
 	}
 }

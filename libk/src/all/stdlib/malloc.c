@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdalign.h>
+#include <string.h>
 
 #include <kernel/mm.h>
 #include <kernel/sched.h>
@@ -173,4 +174,23 @@ void free( void* ptr ) {
 	}
 
 	semaphore_release(&info->heap_semaphore);
+}
+
+void* realloc (void* ptr, size_t size) {
+	void* destptr = NULL;
+	if(size != 0) {
+		destptr = malloc(size);
+	}
+	if(destptr != NULL && ptr != NULL) {
+		//get the size of the initial memory block
+		const size_t start_size = aligned_size(sizeof(chunck_marker_start_t));
+		chunck_marker_start_t* start = (chunck_marker_start_t*)(ptr - start_size);
+		size_t init_size = start->size;
+
+		size_t length_to_copy = size < init_size ? size : init_size;
+		memcpy(destptr, ptr, length_to_copy);
+
+		free(ptr);
+	}
+	return destptr;
 }
