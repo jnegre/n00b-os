@@ -1,4 +1,7 @@
 #include <kernel/panic.h>
+#include <kernel/mm.h>
+#include <kernel/sched.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -16,15 +19,18 @@ static void execute(int argc, char** argv);
 // Builtin commands
 static void builtin_help(int argc, char** argv);
 static void builtin_echo(int argc, char** argv);
+static void builtin_pcb(int argc, char** argv);
 
 char* builtin_cmd[] = {
 	"help",
-	"echo"
+	"echo",
+	"pcb"
 };
 
 void (*builtin_func[])(int, char**) = {
 	&builtin_help,
-	&builtin_echo
+	&builtin_echo,
+	&builtin_pcb
 };
 
 #define NB_CMDS (sizeof(builtin_cmd) / sizeof(builtin_cmd[0]))
@@ -121,4 +127,18 @@ static void builtin_echo(int argc, char** argv) {
 	for(int i=1; i<argc; i++) {
 		printf("%s ", argv[i]);
 	}
+}
+
+static void builtin_pcb(int argc, char** argv) {
+	process_control_block_t *pcb = current_process_control_block();
+
+	printf("PID: %u\nHeap from 0x%X to 0x%X (%u bytes)\nRoot dir: %X\nWorking dir: %X",
+	pcb->tgid,
+	pcb->mm_info->kernel_info->heap_start,
+	pcb->mm_info->kernel_info->heap_end,
+	(pcb->mm_info->kernel_info->heap_end - pcb->mm_info->kernel_info->heap_start),
+	pcb->vfs_info->root,
+	pcb->vfs_info->cwd
+	);
+
 }
