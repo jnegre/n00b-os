@@ -5,21 +5,26 @@
 #include <stdbool.h>
 #include <string.h>
 
-//128 chars ought to be enough for anyone
-#define BUFFER_SIZE 32
+#define LINE_BUFFER_SIZE 32
+#define ARGS_BUFFER_SIZE 4
+#define ARGS_SEPARATOR " "
 
 static char* readline();
-static void execute(char* line );
+static char** parseline(char* line, int* argc);
+static void execute(int argc, char** argv);
 
 // Builtin commands
-static void builtin_help();
+static void builtin_help(int argc, char** argv);
+static void builtin_echo(int argc, char** argv);
 
 char* builtin_cmd[] = {
-	"HELP"
+	"help",
+	"echo"
 };
 
-void (*builtin_func[])() = {
-	&builtin_help
+void (*builtin_func[])(int, char**) = {
+	&builtin_help,
+	&builtin_echo
 };
 
 #define NB_CMDS (sizeof(builtin_cmd) / sizeof(builtin_cmd[0]))
@@ -28,14 +33,42 @@ void test_shell() {
 	while(true) {
 		printf("\n> ");
 		char* line = readline();
+		int argc;
+		char** argv = parseline(line, &argc);
 		printf("\n");
-		execute(line);
+		execute(argc, argv);
+		free(argv);
 		free(line);
 	}
 }
 
+static char** parseline(char* line, int* argc) {
+	size_t args_size = ARGS_BUFFER_SIZE;
+	*argc = 0;
+	char** argv = malloc(args_size * sizeof(char*));
+	char* arg;
+	char* saveptr;
+
+	if(argv == NULL) {
+		panic("out of memory");
+	}
+	arg = strtok_r(line, ARGS_SEPARATOR, &saveptr);
+	while(arg != NULL) {
+		argv[(*argc)++] = arg;
+		if(*argc == args_size) {
+			args_size += ARGS_BUFFER_SIZE;
+			argv = realloc(argv, args_size * sizeof(char*));
+			if(argv == NULL) {
+				panic("out of memory in realloc");
+			}
+		}
+		arg = strtok_r(NULL, ARGS_SEPARATOR, &saveptr);
+	}
+	return argv;
+}
+
 static char* readline() {
-	size_t buffer_size = BUFFER_SIZE;
+	size_t buffer_size = LINE_BUFFER_SIZE;
 	char* buffer = malloc(buffer_size);
 	size_t position = 0;
 	int c;
@@ -54,7 +87,7 @@ static char* readline() {
 			printf("%c", c);
 		}
 		if(position == buffer_size) {
-			buffer_size += BUFFER_SIZE;
+			buffer_size += LINE_BUFFER_SIZE;
 			buffer = realloc(buffer, buffer_size);
 			if(buffer == NULL) {
 				panic("out of memory in realloc");
@@ -63,13 +96,13 @@ static char* readline() {
 	}
 }
 
-static void execute(char* line ) {
-	if(line == NULL || strcmp(line, "")==0) {
+static void execute(int argc, char** argv) {
+	if(argc == 0 || strcmp(argv[0], "")==0) {
 		return;
 	}
 	for(size_t i=0; i<NB_CMDS; i++) {
-		if(strcmp(line, builtin_cmd[i]) == 0) {
-			(*builtin_func[i])();
+		if(strcmp(argv[0], builtin_cmd[i]) == 0) {
+			(*builtin_func[i])(argc, argv);
 			return;
 		}
 	}
@@ -77,9 +110,15 @@ static void execute(char* line ) {
 	return;
 }
 
-static void builtin_help() {
+static void builtin_help(int argc, char** argv) {
 	printf("Valid commands:\n");
 	for(size_t i=0; i<NB_CMDS; i++) {
 		printf(" - %s\n", builtin_cmd[i]);
+	}
+}
+
+static void builtin_echo(int argc, char** argv) {
+	for(int i=1; i<argc; i++) {
+		printf("%s ", argv[i]);
 	}
 }
