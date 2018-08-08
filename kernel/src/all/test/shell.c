@@ -156,7 +156,7 @@ static void builtin_cat(int argc, char** argv) {
 		printf("Failed to open file %s", argv[1]);
 		return;
 	}
-	size_t buffer_size = 1024; //FIXME use a smaller inital buffer + realloc
+	size_t buffer_size = 16;
 	char* buffer;
 	buffer = malloc(buffer_size);
 	if(buffer == NULL) {
@@ -167,6 +167,16 @@ static void builtin_cat(int argc, char** argv) {
 	int c;
 	while ((c = fgetc(fp)) != EOF && i<buffer_size) {
 		buffer[i++] = (char)c;
+		if(i == buffer_size) {
+			buffer_size *= 2;
+			char* new_buffer = realloc(buffer, buffer_size);
+			if(new_buffer == NULL) {
+				printf("Error: not enough memory to read file");
+				free(buffer);
+				return;
+			}
+			buffer = new_buffer;
+		}
 	}
 	buffer[i] = 0;
 
