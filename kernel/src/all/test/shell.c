@@ -156,7 +156,7 @@ static void builtin_cat(int argc, char** argv) {
 		printf("Failed to open file %s", argv[1]);
 		return;
 	}
-	size_t buffer_size = 200; //FIXME more
+	size_t buffer_size = 1024; //FIXME use a smaller inital buffer + realloc
 	char* buffer;
 	buffer = malloc(buffer_size);
 	if(buffer == NULL) {

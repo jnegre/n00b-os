@@ -114,6 +114,7 @@ int vn_open(file_handle_t** handlepp, const char* path, const int f, const crede
 		return -1;
 	}
 	handle->node = *node;
+	handle->pos.pos = 0;
 	handle->flags = f;
 	handle->error = 0;
 	handle->eof = 0;
