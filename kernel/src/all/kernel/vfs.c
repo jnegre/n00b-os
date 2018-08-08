@@ -20,8 +20,12 @@ void vfs_create_initial_fs(void* initrd) {
 	}
 	// TODO free initrd from memory (in the calling method), all usefull data has been copied
 	rootvfs = initrdfs;
-	// TODO set pcb->root and cwd
-	//process_control_block_t* pcb = current_process_control_block();
+
+	// set pcb->root and cwd
+	process_control_block_t* pcb = current_process_control_block();
+	if(VFS_ROOT(rootvfs, &(pcb->vfs_info->root)) || VFS_ROOT(rootvfs, &(pcb->vfs_info->cwd))) {
+		panic("Unable to get root of inital fs");
+	}
 }
 
 static int put_file_handle(file_handle_t* file_handle) {
