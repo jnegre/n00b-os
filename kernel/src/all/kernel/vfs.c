@@ -84,17 +84,28 @@ int vn_open(file_handle_t** handlepp, const char* path, const int f, const crede
 		*node = current_process_control_block()->vfs_info->cwd;
 	}
 
+	// copy the **const** path since strtok_k will modify it
+	char* workpath = malloc(length + 1);
+	if(workpath == NULL) {
+		free(node);
+		return -1;
+	}
+	strcpy(workpath, path);
+
 	char* saveptr;
 	char* element;
-	element = strtok_r(path, "/", &saveptr);
+	element = strtok_r(workpath, "/", &saveptr);
 	while(element != NULL) {
 		error = VN_LOOKUP(*node, element, node, c);
 		if(error) {
+			free(workpath);
 			free(node);
 			return error;
 		}
 		element = strtok_r(NULL, "/", &saveptr);
 	}
+	free(workpath);
+	
 	// call VN_OPEN on the node
 	error = VN_OPEN(node, f, c);
 	if(error) {

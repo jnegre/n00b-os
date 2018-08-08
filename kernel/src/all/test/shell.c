@@ -52,7 +52,7 @@ void test_shell() {
 }
 
 static char** parseline(char* line, int* argc) {
-	size_t args_size = ARGS_BUFFER_SIZE;
+	int args_size = ARGS_BUFFER_SIZE;
 	*argc = 0;
 	char** argv = malloc(args_size * sizeof(char*));
 	char* arg;
@@ -163,7 +163,7 @@ static void builtin_cat(int argc, char** argv) {
 		printf("Error: not enough memory to read file");
 		return;
 	}
-	int i = 0;
+	size_t i = 0;
 	int c;
 	while ((c = fgetc(fp)) != EOF && i<buffer_size) {
 		buffer[i++] = (char)c;
