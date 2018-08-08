@@ -23,7 +23,7 @@ int ringbuffer_put(struct ringbuffer *rb, const void* data) {
 	}
 }
 
-int ringbuffer_get(struct ringbuffer *rb, const void* data) {
+int ringbuffer_get(struct ringbuffer *rb, void* data) {
 	if(!ringbuffer_empty(rb)) {
 		memcpy(data, &(rb->buffer[OFFSET(rb, tail)]), rb->size_elem);
 		rb->tail++;
