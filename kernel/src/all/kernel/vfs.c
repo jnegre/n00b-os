@@ -70,47 +70,41 @@ static void remove_file_handle(file_handle_t* file_handle) {
 int vn_open(file_handle_t** handlepp, const char* path, const int f, const credentials_t* c) {
 	int error;
 	int length = strlen(path);
-	if(path[0] != '/') {
-		panic("Relative path not supported yet");
+	if(length == 0) {
+		// invalid path
+		return -1;
 	}
 	if(path[length-1] == '/') {
 		return -1; // can't open a dir
 	}
-	// TODO have absolute/relative path, use pcb's cwd and root dir
 	vnode_t** node = malloc(sizeof(vnode_t**));
-	error = VFS_ROOT(rootvfs, node);
-	if(error) return error;
-	char* element = malloc(strlen(path));
-	if(!element) {
-		free(node);
-		return -1;
+	if(path[0] == '/') {
+		*node = current_process_control_block()->vfs_info->root;
+	} else {
+		*node = current_process_control_block()->vfs_info->cwd;
 	}
-	int index = 0;
-	while(index<length) {
-		int element_index = 0;
-		++index; // skip initial /
-		while(path[index]!= '/' && index<length) {
-			element[element_index++] = path[index++];
-		}
+
+	char* saveptr;
+	char* element;
+	element = strtok_r(path, "/", &saveptr);
+	while(element != NULL) {
 		error = VN_LOOKUP(*node, element, node, c);
 		if(error) {
 			free(node);
-			free(element);
 			return error;
 		}
+		element = strtok_r(NULL, "/", &saveptr);
 	}
 	// call VN_OPEN on the node
 	error = VN_OPEN(node, f, c);
 	if(error) {
 		free(node);
-		free(element);
 		return error;
 	}
 	// we now have the vnode, let's put it in the pcb for later
 	file_handle_t* handle = malloc(sizeof(file_handle_t));
 	if(!handle) {
 		free(node);
-		free(element);
 		return -1;
 	}
 	handle->node = *node;
@@ -120,7 +114,6 @@ int vn_open(file_handle_t** handlepp, const char* path, const int f, const crede
 	handle->eof = 0;
 	put_file_handle(handle);
 	*handlepp = handle;
-	free(element);
 	return 0;
 }
 
