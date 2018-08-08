@@ -20,17 +20,20 @@ static void execute(int argc, char** argv);
 static void builtin_help(int argc, char** argv);
 static void builtin_echo(int argc, char** argv);
 static void builtin_pcb(int argc, char** argv);
+static void builtin_cat(int argc, char** argv);
 
 char* builtin_cmd[] = {
 	"help",
 	"echo",
-	"pcb"
+	"pcb",
+	"cat"
 };
 
 void (*builtin_func[])(int, char**) = {
 	&builtin_help,
 	&builtin_echo,
-	&builtin_pcb
+	&builtin_pcb,
+	&builtin_cat
 };
 
 #define NB_CMDS (sizeof(builtin_cmd) / sizeof(builtin_cmd[0]))
@@ -141,4 +144,38 @@ static void builtin_pcb(int argc, char** argv) {
 	pcb->vfs_info->cwd
 	);
 
+}
+
+static void builtin_cat(int argc, char** argv) {
+	if(argc != 2) {
+		printf("Error: expecting a single argument, the file to read");
+		return;
+	}
+	FILE* fp = fopen(argv[1], "r");
+	if(!fp) {
+		printf("Failed to open file %s", argv[1]);
+		return;
+	}
+	size_t buffer_size = 200; //FIXME more
+	char* buffer;
+	buffer = malloc(buffer_size);
+	if(buffer == NULL) {
+		printf("Error: not enough memory to read file");
+		return;
+	}
+	int i = 0;
+	int c;
+	while ((c = fgetc(fp)) != EOF && i<buffer_size) {
+		buffer[i++] = (char)c;
+	}
+	buffer[i] = 0;
+
+	if(ferror(fp)) {
+		printf("Failed to read %s", argv[1]);
+	} else {
+		printf("%s", buffer);
+	}
+
+	fclose(fp);
+	free(buffer);
 }
