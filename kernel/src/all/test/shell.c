@@ -1,3 +1,5 @@
+#include <goodies.h>
+
 #include <kernel/panic.h>
 #include <kernel/mm.h>
 #include <kernel/sched.h>
@@ -119,7 +121,7 @@ static void execute(int argc, char** argv) {
 	return;
 }
 
-static void builtin_help(int argc, char** argv) {
+static void builtin_help(UNUSED int argc, UNUSED char** argv) {
 	printf("Valid commands:\n");
 	for(size_t i=0; i<NB_CMDS; i++) {
 		printf(" - %s\n", builtin_cmd[i]);
@@ -132,7 +134,7 @@ static void builtin_echo(int argc, char** argv) {
 	}
 }
 
-static void builtin_pcb(int argc, char** argv) {
+static void builtin_pcb(UNUSED int argc, UNUSED char** argv) {
 	process_control_block_t *pcb = current_process_control_block();
 
 	printf("PID: %u\nHeap from 0x%X to 0x%X (%u bytes)\nRoot dir: %X\nWorking dir: %X",
@@ -183,7 +185,7 @@ static void builtin_cat(int argc, char** argv) {
 	buffer[i] = 0;
 	//replace non printable characters by a dot
 	for(size_t j=0; j<i; j++) {
-		if(buffer[j]<32 || buffer[j]>127) {
+		if(buffer[j]<32) {
 			buffer[j] = '.';
 		}
 	}

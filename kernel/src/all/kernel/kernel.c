@@ -1,10 +1,12 @@
+#include <goodies.h>
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #include <test/mm.h>
-#include <test/sched.h>
+#include <test/shell.h>
 
 #include <kernel/tty.h>
 #include <kernel/panic.h>
@@ -54,7 +56,7 @@ static void print_banner() {
 	printf("%s\n* %s *\n%s\n", stars, message, stars);
 }
 
-void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, uint32_t initrd_length, uint8_t* initrd) {
+void kernel_main(uint32_t mmap_length, multiboot_memory_map_t* mmap, UNUSED uint32_t initrd_length, uint8_t* initrd) {
 	sched_init_process_control_block();
 	/* Initialize terminal interface */
 	terminal_initialize();

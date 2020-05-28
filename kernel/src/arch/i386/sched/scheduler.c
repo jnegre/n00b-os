@@ -1,3 +1,5 @@
+#include <goodies.h>
+
 #include <kernel/sched.h>
 #include <kernel/mm.h>
 #include <kernel/panic.h>
@@ -283,7 +285,7 @@ void sched_new_thread(uint32_t* tid, int (*func)(void*), void* data, enum thread
 	}
 }
 
-void sched_kill_task(int res) {
+void sched_kill_task(UNUSED int res) {
 	//TODO do something with res
 	//printf("Kill %u with res %u\n",current_process_control_block()->tid , res);
 	switching = true;
@@ -292,9 +294,7 @@ void sched_kill_task(int res) {
 	doomed_task = dead;
 }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-static noreturn int idle(void* not_used) {
+static noreturn int idle(UNUSED void* not_used) {
 	#pragma GCC diagnostic pop
 	while(true) {
 		asm("hlt;");

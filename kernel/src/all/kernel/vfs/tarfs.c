@@ -1,3 +1,5 @@
+#include <goodies.h>
+
 #include <kernel/vfs.h>
 #include <kernel/vfs/tarfs.h>
 
@@ -190,17 +192,17 @@ static int lookup_parent(vnode_t* root, char* path, vnode_t** parent, char* name
 	return 0;
 }
 
-static int node_open(vnode_t** vpp, const int f, const credentials_t* c) {
+static int node_open(UNUSED vnode_t** vpp, UNUSED const int f, UNUSED const credentials_t* c) {
 	//TODO
 	return 0;
 }
 
-static int node_close(vnode_t* vpp, const int f, const credentials_t* c) {
+static int node_close(UNUSED vnode_t* vpp, UNUSED const int f, UNUSED const credentials_t* c) {
 	//TODO
 	return 0;
 }
 
-static int node_lookup(vnode_t* vp, const char* nm, vnode_t** vpp, const credentials_t* c) {
+static int node_lookup(vnode_t* vp, const char* nm, vnode_t** vpp, UNUSED const credentials_t* c) {
 	if(vp->type != VDIR) {
 		return -1; // wrong type
 	}
@@ -217,7 +219,7 @@ static int node_lookup(vnode_t* vp, const char* nm, vnode_t** vpp, const credent
 	return -1;
 }
 
-static int node_rdwr(vnode_t* vp, uio_t* uiop, enum uio_rw rw, int f, const credentials_t* c) {
+static int node_rdwr(vnode_t* vp, uio_t* uiop, enum uio_rw rw, UNUSED int f, UNUSED const credentials_t* c) {
 	if(vp->type != VREG) {
 		return -1; // wrong type
 	}
@@ -238,7 +240,7 @@ static int node_rdwr(vnode_t* vp, uio_t* uiop, enum uio_rw rw, int f, const cred
  * VFS ops
  */
 
-static void free_all(struct tar_vfs_data* vfs_data) {
+static void free_all(UNUSED struct tar_vfs_data* vfs_data) {
 	//TODO
 }
 
