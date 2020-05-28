@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 int fgetc(FILE *stream) {
-	char out;
+	unsigned char out;
 	size_t length = 1;
 	int error = vn_rdwr(stream, UIO_READ, &out, &length, NULL);
 	if(!error) {
