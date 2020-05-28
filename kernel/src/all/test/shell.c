@@ -161,6 +161,7 @@ static void builtin_cat(int argc, char** argv) {
 	buffer = malloc(buffer_size);
 	if(buffer == NULL) {
 		printf("Error: not enough memory to read file");
+		fclose(fp);
 		return;
 	}
 	size_t i = 0;
@@ -172,6 +173,7 @@ static void builtin_cat(int argc, char** argv) {
 			char* new_buffer = realloc(buffer, buffer_size);
 			if(new_buffer == NULL) {
 				printf("Error: not enough memory to read file");
+				fclose(fp);
 				free(buffer);
 				return;
 			}
@@ -179,11 +181,17 @@ static void builtin_cat(int argc, char** argv) {
 		}
 	}
 	buffer[i] = 0;
+	//replace non printable characters by a dot
+	for(size_t j=0; j<i; j++) {
+		if(buffer[j]<32 || buffer[j]>127) {
+			buffer[j] = '.';
+		}
+	}
 
 	if(ferror(fp)) {
 		printf("Failed to read %s", argv[1]);
 	} else {
-		printf("%s", buffer);
+		printf("%s\n%u bytes", buffer, i);
 	}
 
 	fclose(fp);
